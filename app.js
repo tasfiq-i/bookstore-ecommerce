@@ -104,6 +104,7 @@ app.get('/admin/authors', (req, res) => res.render('admin/authors', { title: 'Ma
 app.get('/admin/publishers', (req, res) => res.render('admin/publishers', { title: 'Manage Publishers' }));
 app.get('/admin/orders', (req, res) => res.render('admin/orders', { title: 'Manage Orders' }));
 app.get('/admin/coupons', (req, res) => res.render('admin/coupons', { title: 'Manage Coupons' }));
+app.get('/admin/users', (req, res) => res.render('admin/users', { title: 'Manage Users' }));
 
 // ─── 404 + Global Error Handler (must be last) ────────
 app.use(notFound);
