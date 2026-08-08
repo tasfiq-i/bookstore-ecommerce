@@ -1,0 +1,164 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-4" id="bookDetailsPage" data-slug="<%= slug %>">
+  <div class="container">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb small mb-0" id="breadcrumbNav">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/books">Catalog</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Loading...</li>
+      </ol>
+    </nav>
+
+    <!-- Loading skeleton -->
+    <div id="detailsSkeleton" class="row g-4">
+      <div class="col-lg-5">
+        <div class="skeleton" style="aspect-ratio: 3/4; border-radius: 10px;"></div>
+      </div>
+      <div class="col-lg-7">
+        <div class="skeleton mb-3" style="height: 32px; width: 80%;"></div>
+        <div class="skeleton mb-3" style="height: 18px; width: 40%;"></div>
+        <div class="skeleton mb-3" style="height: 24px; width: 30%;"></div>
+        <div class="skeleton" style="height: 120px; width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Actual content, hidden until loaded -->
+    <div id="bookDetailsContent" class="d-none">
+      <div class="row g-5">
+        <!-- ═══ Gallery ═══ -->
+        <div class="col-lg-5">
+          <div class="book-detail-gallery">
+            <div class="book-detail-main-image position-relative">
+              <img id="mainBookImage" src="" alt="" />
+              <span id="detailStockBadge" class="badge badge-stock"></span>
+              <span id="detailDiscountBadge" class="badge badge-discount d-none"></span>
+            </div>
+            <div class="book-detail-thumbs" id="thumbnailsContainer"></div>
+          </div>
+        </div>
+
+        <!-- ═══ Info & Purchase Panel ═══ -->
+        <div class="col-lg-7">
+          <div class="d-flex justify-content-between align-items-start">
+            <h1 class="h3 mb-2" id="bookTitle"></h1>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="star-rating-display" id="bookRatingStars"></div>
+            <span class="small text-muted" id="bookRatingCount"></span>
+            <span class="text-muted">|</span>
+            <span class="small">By <a href="#" id="bookAuthorLink" class="fw-semibold text-decoration-none"></a></span>
+          </div>
+
+          <div class="d-flex align-items-baseline gap-2 mb-3">
+            <span class="price-current fs-3" id="bookCurrentPrice"></span>
+            <span class="price-original" id="bookOriginalPrice"></span>
+            <span class="badge bg-danger d-none" id="bookDiscountPercent"></span>
+          </div>
+
+          <p class="text-secondary mb-4" id="bookDescription"></p>
+
+          <table class="table table-sm table-borderless mb-4" style="max-width: 420px;">
+            <tbody>
+              <tr><td class="text-muted small">ISBN</td><td class="small fw-semibold" id="bookIsbn"></td></tr>
+              <tr><td class="text-muted small">Publisher</td><td class="small fw-semibold" id="bookPublisher"></td></tr>
+              <tr><td class="text-muted small">Category</td><td class="small fw-semibold" id="bookCategory"></td></tr>
+              <tr><td class="text-muted small">Format</td><td class="small fw-semibold" id="bookFormat"></td></tr>
+              <tr><td class="text-muted small">Language</td><td class="small fw-semibold" id="bookLanguage"></td></tr>
+              <tr><td class="text-muted small">Pages</td><td class="small fw-semibold" id="bookPages"></td></tr>
+            </tbody>
+          </table>
+
+          <!-- Stock status live area -->
+          <div class="mb-3" id="liveStockMessage"></div>
+
+          <!-- Add to Cart Panel -->
+          <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <div class="quantity-selector">
+              <button type="button" id="qtyDecreaseBtn">−</button>
+              <input type="number" id="qtyInput" value="1" min="1" />
+              <button type="button" id="qtyIncreaseBtn">+</button>
+            </div>
+            <button class="btn btn-primary px-4 py-2 btn-add-cart" id="addToCartBtn">
+              <i class="bi bi-cart-plus me-1"></i> Add to Cart
+            </button>
+            <button class="btn btn-outline-primary px-4 py-2" id="buyNowBtn">
+              <i class="bi bi-lightning-charge me-1"></i> Buy Now
+            </button>
+          </div>
+
+          <div class="d-flex gap-4 small text-muted">
+            <div><i class="bi bi-truck me-1"></i> Cash on Delivery Available</div>
+            <div><i class="bi bi-arrow-repeat me-1"></i> Easy Returns</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Reviews Section ═══ -->
+      <div class="row mt-5">
+        <div class="col-lg-8">
+          <h4 class="section-title">Customer Reviews</h4>
+
+          <!-- Add Review Form (auth users only) -->
+          <div class="card mb-4 auth-only d-none" id="addReviewCard">
+            <div class="card-body">
+              <h6 class="mb-3">Write a Review</h6>
+              <form id="reviewForm">
+                <div class="mb-3">
+                  <label class="form-label small">Your Rating</label>
+                  <div class="star-rating-input" id="reviewStarInput">
+                    <i class="bi bi-star-fill" data-value="1"></i>
+                    <i class="bi bi-star-fill" data-value="2"></i>
+                    <i class="bi bi-star-fill" data-value="3"></i>
+                    <i class="bi bi-star-fill" data-value="4"></i>
+                    <i class="bi bi-star-fill" data-value="5"></i>
+                  </div>
+                  <input type="hidden" id="reviewRatingValue" value="0" />
+                </div>
+                <div class="mb-3">
+                  <textarea class="form-control" id="reviewComment" rows="3" placeholder="Share your thoughts about this book..." maxlength="1000"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" id="submitReviewBtn">Submit Review</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="guest-only d-none alert alert-light border small">
+            <a href="/login">Login</a> to write a review.
+          </div>
+
+          <div id="reviewsList"></div>
+          <div id="noReviewsMessage" class="empty-state d-none py-4">
+            <i class="bi bi-chat-square-text"></i>
+            <p class="mb-0">No reviews yet. Be the first to review this book!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Related Books ═══ -->
+      <div class="row mt-5" id="relatedBooksSection">
+        <div class="col-12">
+          <h4 class="section-title">You May Also Like</h4>
+          <div class="related-books-scroll" id="relatedBooksContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Not Found State -->
+    <div id="bookNotFoundState" class="empty-state d-none">
+      <i class="bi bi-exclamation-circle"></i>
+      <h5>Book Not Found</h5>
+      <p class="mb-3">This book may have been removed or is no longer available.</p>
+      <a href="/books" class="btn btn-primary btn-sm">Browse Catalog</a>
+    </div>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/catalog.js"></script>

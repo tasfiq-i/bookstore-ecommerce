@@ -1,0 +1,177 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-4">
+  <div class="container">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/cart">Cart</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+      </ol>
+    </nav>
+
+    <h3 class="mb-4">Checkout</h3>
+
+    <!-- Loading -->
+    <div id="checkoutLoadingState" class="row g-4">
+      <div class="col-lg-8"><div class="skeleton" style="height: 300px;"></div></div>
+      <div class="col-lg-4"><div class="skeleton" style="height: 300px;"></div></div>
+    </div>
+
+    <!-- Empty cart guard -->
+    <div id="checkoutEmptyState" class="empty-state d-none">
+      <i class="bi bi-cart-x"></i>
+      <h5 class="mt-3">Your cart is empty</h5>
+      <p class="mb-3">Add some books before checking out.</p>
+      <a href="/books" class="btn btn-primary">Browse Books</a>
+    </div>
+
+    <!-- Stock issue guard -->
+    <div id="checkoutStockIssueState" class="empty-state d-none">
+      <i class="bi bi-exclamation-triangle"></i>
+      <h5 class="mt-3">Stock Issue Detected</h5>
+      <p class="mb-3">Some items in your cart exceed available stock. Please review your cart first.</p>
+      <a href="/cart" class="btn btn-primary">Go to Cart</a>
+    </div>
+
+    <form id="checkoutForm" class="row g-4 d-none">
+      <!-- Left: Address + Notes -->
+      <div class="col-lg-8">
+
+        <!-- Shipping Address -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h6 class="mb-3"><span class="checkout-step-badge">1</span>Shipping Address</h6>
+
+            <div class="mb-3">
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="addressMode" id="modeSaved" value="saved" checked />
+                <label class="btn btn-outline-primary btn-sm" for="modeSaved">Use Saved Address</label>
+
+                <input type="radio" class="btn-check" name="addressMode" id="modeNew" value="new" />
+                <label class="btn btn-outline-primary btn-sm" for="modeNew">Enter New Address</label>
+              </div>
+            </div>
+
+            <!-- Saved Addresses -->
+            <div id="savedAddressSection">
+              <div id="savedAddressList" class="row g-3"></div>
+              <div id="noSavedAddressMsg" class="alert alert-light border small d-none">
+                You have no saved addresses. Please choose "Enter New Address" instead.
+              </div>
+            </div>
+
+            <!-- New Address Form -->
+            <div id="newAddressSection" class="d-none">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-control" name="fullName" id="newFullName" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Phone Number</label>
+                  <input type="tel" class="form-control" name="phone" id="newPhone" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Address Line 1</label>
+                  <input type="text" class="form-control" name="addressLine1" id="newAddressLine1" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Address Line 2 <span class="text-muted">(optional)</span></label>
+                  <input type="text" class="form-control" name="addressLine2" id="newAddressLine2" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">City</label>
+                  <input type="text" class="form-control" name="city" id="newCity" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">State / Division</label>
+                  <input type="text" class="form-control" name="state" id="newState" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Postal Code</label>
+                  <input type="text" class="form-control" name="postalCode" id="newPostalCode" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Country</label>
+                  <input type="text" class="form-control" name="country" id="newCountry" value="Bangladesh" />
+                </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="saveAddressCheck" />
+                    <label class="form-check-label small" for="saveAddressCheck">Save this address to my profile</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h6 class="mb-3"><span class="checkout-step-badge">2</span>Payment Method</h6>
+            <div class="form-check border rounded p-3">
+              <input class="form-check-input" type="radio" name="paymentMethod" id="codPayment" checked disabled />
+              <label class="form-check-label fw-semibold" for="codPayment">
+                <i class="bi bi-cash-coin me-1"></i> Cash on Delivery
+              </label>
+              <div class="small text-muted mt-1">Pay in cash when your order is delivered to your doorstep.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Notes -->
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3"><span class="checkout-step-badge">3</span>Order Notes <span class="text-muted small">(optional)</span></h6>
+            <textarea class="form-control" id="orderNotes" rows="3" maxlength="500" placeholder="Any special instructions for delivery..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Order Summary -->
+      <div class="col-lg-4">
+        <div class="card cart-summary-card">
+          <div class="card-body">
+            <h6 class="mb-3">Your Order</h6>
+            <div id="checkoutItemsList"></div>
+
+            <hr />
+            <div class="d-flex justify-content-between small mb-2">
+              <span class="text-muted">Subtotal</span>
+              <span id="checkoutSubtotal">৳0.00</span>
+            </div>
+            <div class="d-flex justify-content-between small mb-2 text-success d-none" id="checkoutDiscountRow">
+              <span>Discount <span id="checkoutCouponLabel"></span></span>
+              <span id="checkoutDiscount">-৳0.00</span>
+            </div>
+            <div class="d-flex justify-content-between small mb-2">
+              <span class="text-muted">Shipping</span>
+              <span id="checkoutShipping">৳60.00</span>
+            </div>
+            <hr />
+            <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+              <span>Total</span>
+              <span id="checkoutTotal">৳0.00</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2" id="placeOrderBtn">
+              <i class="bi bi-bag-check me-1"></i> Place Order (COD)
+            </button>
+            <p class="small text-muted text-center mt-2 mb-0">
+              <i class="bi bi-shield-check me-1"></i> Your order is safe and secure
+            </p>
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/checkout.js"></script>

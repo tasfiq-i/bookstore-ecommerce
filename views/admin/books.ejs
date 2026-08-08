@@ -1,0 +1,185 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="admin-layout" id="adminGuard" style="display: none;">
+  <%- include('../partials/admin-sidebar', { activePage: 'books' }) %>
+
+  <main class="admin-content">
+    <div class="admin-topbar">
+      <div>
+        <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" id="openAdminSidebarBtn"><i class="bi bi-list"></i></button>
+        <h4 class="d-inline-block mb-0">Books</h4>
+        <p class="text-muted small mb-0 mt-1">Manage your book catalog</p>
+      </div>
+      <button class="btn btn-primary btn-sm" id="addBookBtn"><i class="bi bi-plus-lg me-1"></i> Add Book</button>
+    </div>
+
+    <div class="admin-table-card">
+      <div class="admin-table-toolbar">
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="search" class="form-control form-control-sm" id="booksSearchInput" placeholder="Search title, ISBN..." style="width: 220px;" />
+          <select class="form-select form-select-sm" id="booksCategoryFilter" style="width: 160px;">
+            <option value="">All Categories</option>
+          </select>
+          <select class="form-select form-select-sm" id="booksStockFilter" style="width: 150px;">
+            <option value="">All Stock</option>
+            <option value="in-stock">In Stock</option>
+            <option value="low-stock">Low Stock</option>
+            <option value="out-of-stock">Out of Stock</option>
+          </select>
+        </div>
+        <select class="form-select form-select-sm" id="booksLimitSelect" style="width: 100px;">
+          <option value="10">10 / page</option>
+          <option value="25" selected>25 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table admin-table">
+          <thead>
+            <tr>
+              <th>Book</th>
+              <th>Category</th>
+              <th>Author</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Rating</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="booksTableBody">
+            <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <span class="small text-muted" id="booksResultsInfo"></span>
+        <nav><ul class="pagination pagination-sm mb-0" id="booksPagination"></ul></nav>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="adminAccessDenied" class="container py-5 text-center d-none">
+  <i class="bi bi-shield-lock display-1 text-danger"></i>
+  <h4 class="mt-3">Access Denied</h4>
+  <a href="/" class="btn btn-primary mt-2">Back to Home</a>
+</div>
+
+<!-- Book Add/Edit Modal -->
+<div class="modal fade" id="bookModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bookModalTitle">Add Book</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="bookForm">
+          <input type="hidden" id="bookEditId" />
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Title</label>
+              <input type="text" class="form-control" id="bookTitle" required maxlength="200" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">ISBN</label>
+              <input type="text" class="form-control" id="bookIsbn" required placeholder="10 or 13 digits" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="bookCategorySelect" required></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Author</label>
+              <select class="form-select" id="bookAuthorSelect" required></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Publisher</label>
+              <select class="form-select" id="bookPublisherSelect" required></select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Price (৳)</label>
+              <input type="number" class="form-control" id="bookPrice" min="0" step="0.01" required />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Discount Price</label>
+              <input type="number" class="form-control" id="bookDiscountPrice" min="0" step="0.01" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Stock</label>
+              <input type="number" class="form-control" id="bookStock" min="0" required />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Low Stock Alert At</label>
+              <input type="number" class="form-control" id="bookLowStockThreshold" min="0" value="5" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Format</label>
+              <select class="form-select" id="bookFormat">
+                <option>Paperback</option>
+                <option>Hardcover</option>
+                <option>E-Book</option>
+                <option>Audiobook</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Language</label>
+              <input type="text" class="form-control" id="bookLanguage" value="English" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pages</label>
+              <input type="number" class="form-control" id="bookPages" min="1" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" id="bookDescription" rows="3" required minlength="10" maxlength="3000"></textarea>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label">Tags <span class="text-muted small">(comma separated)</span></label>
+              <input type="text" class="form-control" id="bookTags" placeholder="fiction, bestseller, classic" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="bookIsFeatured" />
+                <label class="form-check-label small" for="bookIsFeatured">Featured</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="bookIsActive" checked />
+                <label class="form-check-label small" for="bookIsActive">Active</label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Book Images <span class="text-muted small">(max 5)</span></label>
+              <div id="existingImagesGrid" class="image-upload-preview-grid mb-2"></div>
+              <div class="image-upload-dropzone" id="imageDropzone">
+                <i class="bi bi-cloud-arrow-up fs-3 text-muted"></i>
+                <p class="small text-muted mb-0">Click or drag images here to upload</p>
+                <input type="file" id="bookImagesInput" class="d-none" accept="image/jpeg,image/png,image/webp" multiple />
+              </div>
+              <div id="newImagesPreviewGrid" class="image-upload-preview-grid mt-2"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveBookBtn">Save Book</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script src="/js/admin.js"></script>
+<script src="/js/admin-entities.js"></script>
+<script src="/js/admin-books.js"></script>

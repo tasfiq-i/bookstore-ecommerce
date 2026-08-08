@@ -1,0 +1,210 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<main>
+
+  <!-- ═══════════════ HERO SECTION ═══════════════ -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-7 hero-content">
+          <h1 class="hero-title">
+            Discover Your Next <span>Great Read</span>
+          </h1>
+          <p class="hero-subtitle">
+            Thousands of titles across every genre — fiction, non-fiction, academic, and more.
+            Fast delivery, real-time stock updates, and Cash on Delivery available nationwide.
+          </p>
+
+          <form class="hero-search-form" id="heroSearchForm" autocomplete="off">
+            <div class="input-group">
+              <input type="search" id="heroSearchInput" class="form-control" placeholder="Search by title, author, or ISBN..." />
+              <button class="btn btn-accent" type="submit">
+                <i class="bi bi-search me-1"></i> Search
+              </button>
+            </div>
+          </form>
+
+          <div class="hero-stats">
+            <div>
+              <div class="hero-stat-value" id="heroStatBooks">—</div>
+              <div class="hero-stat-label">Books Available</div>
+            </div>
+            <div>
+              <div class="hero-stat-value" id="heroStatCategories">—</div>
+              <div class="hero-stat-label">Categories</div>
+            </div>
+            <div>
+              <div class="hero-stat-value">24/7</div>
+              <div class="hero-stat-label">Customer Support</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5 d-none d-lg-block hero-illustration">
+          <i class="bi bi-book-half"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+
+    <!-- ═══════════════ CATEGORY PILLS ═══════════════ -->
+    <section class="home-section">
+      <div class="home-section-header">
+        <div>
+          <h2>Shop by Category</h2>
+          <p>Browse our curated collection across every genre</p>
+        </div>
+        <a href="/books" class="btn btn-outline-primary btn-sm">View All Books</a>
+      </div>
+
+      <div class="category-pill-scroll" id="categoryPillContainer">
+        <% for (let i = 0; i < 6; i++) { %>
+          <div class="category-pill-card">
+            <div class="skeleton" style="width:56px;height:56px;border-radius:50%;margin:0 auto 0.75rem;"></div>
+            <div class="skeleton" style="height:12px;width:70%;margin:0 auto;"></div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- ═══════════════ FEATURED BOOKS ═══════════════ -->
+    <section class="home-section">
+      <div class="home-section-header">
+        <div>
+          <h2>Featured Books</h2>
+          <p>Hand-picked titles our readers love</p>
+        </div>
+        <a href="/books?isFeatured=true" class="btn btn-outline-primary btn-sm">View All</a>
+      </div>
+
+      <div class="book-grid" id="featuredBooksGrid">
+        <% for (let i = 0; i < 4; i++) { %>
+          <div class="card book-card">
+            <div class="skeleton" style="aspect-ratio: 3/4;"></div>
+            <div class="card-body">
+              <div class="skeleton mb-2" style="height: 14px; width: 90%;"></div>
+              <div class="skeleton" style="height: 20px; width: 40%;"></div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+      <div id="featuredBooksEmpty" class="empty-state d-none py-4">
+        <i class="bi bi-stars"></i>
+        <p class="mb-0">No featured books yet — check back soon!</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════ PROMO BANNER ═══════════════ -->
+    <section class="home-section pt-0">
+      <div class="promo-banner">
+        <div>
+          <h3><i class="bi bi-ticket-perforated me-2"></i>Got a Coupon Code?</h3>
+          <p>Apply it at checkout and save instantly on your order.</p>
+        </div>
+        <a href="/books" class="btn btn-light fw-semibold">Start Shopping</a>
+      </div>
+    </section>
+
+    <!-- ═══════════════ NEW ARRIVALS ═══════════════ -->
+    <section class="home-section">
+      <div class="home-section-header">
+        <div>
+          <h2>New Arrivals</h2>
+          <p>Freshly added to our catalog</p>
+        </div>
+        <a href="/books?sort=newest" class="btn btn-outline-primary btn-sm">View All</a>
+      </div>
+
+      <div class="book-grid" id="newArrivalsGrid">
+        <% for (let i = 0; i < 4; i++) { %>
+          <div class="card book-card">
+            <div class="skeleton" style="aspect-ratio: 3/4;"></div>
+            <div class="card-body">
+              <div class="skeleton mb-2" style="height: 14px; width: 90%;"></div>
+              <div class="skeleton" style="height: 20px; width: 40%;"></div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- ═══════════════ BEST SELLERS ═══════════════ -->
+    <section class="home-section">
+      <div class="home-section-header">
+        <div>
+          <h2>Best Sellers</h2>
+          <p>Our customers' most-loved picks</p>
+        </div>
+        <a href="/books?sort=popular" class="btn btn-outline-primary btn-sm">View All</a>
+      </div>
+
+      <div class="book-grid" id="bestSellersGrid">
+        <% for (let i = 0; i < 4; i++) { %>
+          <div class="card book-card">
+            <div class="skeleton" style="aspect-ratio: 3/4;"></div>
+            <div class="card-body">
+              <div class="skeleton mb-2" style="height: 14px; width: 90%;"></div>
+              <div class="skeleton" style="height: 20px; width: 40%;"></div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- ═══════════════ WHY CHOOSE US ═══════════════ -->
+    <section class="home-section">
+      <div class="home-section-header">
+        <div>
+          <h2>Why Shop With Us</h2>
+          <p>What makes BookStore the right choice</p>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+          <div class="feature-icon-box"><i class="bi bi-truck"></i></div>
+          <h6>Cash on Delivery</h6>
+          <p class="small text-muted">Pay when your order arrives at your doorstep, nationwide.</p>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="feature-icon-box"><i class="bi bi-arrow-repeat"></i></div>
+          <h6>Easy Returns</h6>
+          <p class="small text-muted">Hassle-free returns and exchanges within the return window.</p>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="feature-icon-box"><i class="bi bi-shield-check"></i></div>
+          <h6>Secure Checkout</h6>
+          <p class="small text-muted">Your data and orders are protected end-to-end.</p>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="feature-icon-box"><i class="bi bi-headset"></i></div>
+          <h6>24/7 Support</h6>
+          <p class="small text-muted">Our team is always here to help with any questions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ NEWSLETTER ═══════════════ -->
+    <section class="home-section">
+      <div class="newsletter-section">
+        <i class="bi bi-envelope-paper fs-1 text-primary"></i>
+        <h3 class="mt-2">Stay in the Loop</h3>
+        <p class="text-muted mb-0">Get notified about new arrivals, sales, and exclusive offers.</p>
+        <form class="newsletter-form" id="newsletterForm">
+          <div class="input-group">
+            <input type="email" class="form-control" id="newsletterEmail" placeholder="Enter your email" required />
+            <button class="btn btn-primary" type="submit">Subscribe</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<%- include('partials/footer') %>
+
+<script src="/js/home.js"></script>

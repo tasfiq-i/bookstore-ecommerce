@@ -1,0 +1,130 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="admin-layout" id="adminGuard" style="display: none;">
+  <%- include('../partials/admin-sidebar', { activePage: 'authors' }) %>
+
+  <main class="admin-content">
+    <div class="admin-topbar">
+      <div>
+        <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" id="openAdminSidebarBtn"><i class="bi bi-list"></i></button>
+        <h4 class="d-inline-block mb-0">Authors</h4>
+        <p class="text-muted small mb-0 mt-1">Manage authors in your catalog</p>
+      </div>
+      <button class="btn btn-primary btn-sm" id="addEntityBtn"><i class="bi bi-plus-lg me-1"></i> Add Author</button>
+    </div>
+
+    <div class="admin-table-card">
+      <div class="admin-table-toolbar">
+        <input type="search" class="form-control form-control-sm" id="entitySearchInput" placeholder="Search authors..." style="width: 240px;" />
+        <select class="form-select form-select-sm" id="entityLimitSelect" style="width: 100px;">
+          <option value="10">10 / page</option>
+          <option value="25" selected>25 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table admin-table">
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Name</th>
+              <th>Nationality</th>
+              <th>Books</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="entityTableBody">
+            <tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <span class="small text-muted" id="entityResultsInfo"></span>
+        <nav><ul class="pagination pagination-sm mb-0" id="entityPagination"></ul></nav>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="adminAccessDenied" class="container py-5 text-center d-none">
+  <i class="bi bi-shield-lock display-1 text-danger"></i>
+  <h4 class="mt-3">Access Denied</h4>
+  <a href="/" class="btn btn-primary mt-2">Back to Home</a>
+</div>
+
+<!-- Author Add/Edit Modal -->
+<div class="modal fade" id="entityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="entityModalTitle">Add Author</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="entityForm">
+          <input type="hidden" id="entityEditId" />
+          <div class="text-center mb-3">
+            <img id="entityImagePreview" src="/images/placeholder-avatar.png" class="entity-thumb-upload rounded-circle" alt="Preview" />
+            <div class="mt-2">
+              <label class="btn btn-sm btn-outline-primary" for="entityImageInput">Choose Photo</label>
+              <input type="file" id="entityImageInput" class="d-none" accept="image/jpeg,image/png,image/webp" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" id="entityName" required minlength="2" maxlength="100" />
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Nationality</label>
+              <input type="text" class="form-control" id="entityNationality" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Birth Date</label>
+              <input type="date" class="form-control" id="entityBirthDate" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bio</label>
+            <textarea class="form-control" id="entityBio" rows="3" maxlength="1000"></textarea>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="entityIsActive" checked />
+            <label class="form-check-label small" for="entityIsActive">Active</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveEntityBtn">Save Author</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script src="/js/admin.js"></script>
+<script src="/js/admin-entities.js"></script>
+<script>
+  $(function () {
+    if (window.AdminCore.guardAdminAccess()) {
+      window.AdminCore.initSidebarToggle();
+      window.AdminEntities.init({
+        entityKey: 'author',
+        apiBase: '/authors',
+        entityLabel: 'Author',
+        entityLabelPlural: 'Authors',
+        imageField: 'photo',
+        imageFormKey: 'photo',
+        hasImage: true,
+        imageRound: true,
+        extraFields: ['nationality', 'birthDate', 'bio'],
+        columns: ['image', 'name', 'nationality', 'bookCount', 'status', 'actions']
+      });
+    }
+  });
+</script>

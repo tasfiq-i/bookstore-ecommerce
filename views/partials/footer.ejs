@@ -1,0 +1,93 @@
+<!-- Footer -->
+  <footer class="footer-section bg-dark text-light pt-5 pb-4 mt-auto">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-lg-4 col-md-6">
+          <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-3" href="/">
+            <i class="bi bi-book-half fs-3 text-primary"></i>
+            <span class="text-white fs-4">BookStore</span>
+          </a>
+          <p class="text-secondary small">
+            Your one-stop online destination for books across every genre — fast delivery,
+            real-time stock updates, and a seamless shopping experience.
+          </p>
+          <div class="d-flex gap-3 mt-3">
+            <a href="#" class="social-icon" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="social-icon" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+            <a href="#" class="social-icon" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="social-icon" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+          <h6 class="text-uppercase fw-bold mb-3">Shop</h6>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/books">All Books</a></li>
+            <li><a href="/books?isFeatured=true">Featured</a></li>
+            <li><a href="/books?sort=newest">New Arrivals</a></li>
+            <li><a href="/books?sort=popular">Best Sellers</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+          <h6 class="text-uppercase fw-bold mb-3">Account</h6>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/profile">My Profile</a></li>
+            <li><a href="/orders">My Orders</a></li>
+            <li><a href="/cart">My Cart</a></li>
+            <li><a href="/login">Login</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+          <h6 class="text-uppercase fw-bold mb-3">Get In Touch</h6>
+          <ul class="list-unstyled footer-links">
+            <li><i class="bi bi-geo-alt me-2"></i>Comilla, Chittagong, Bangladesh</li>
+            <li><i class="bi bi-envelope me-2"></i>support@bookstore.com</li>
+            <li><i class="bi bi-telephone me-2"></i>+880 1XXX-XXXXXX</li>
+          </ul>
+        </div>
+      </div>
+
+      <hr class="border-secondary mt-4 mb-3" />
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small text-secondary">
+        <p class="mb-2 mb-md-0">&copy; <span id="footerYear"></span> BookStore. All rights reserved.</p>
+        <p class="mb-0">Cash on Delivery available nationwide</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+    integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <!-- Bootstrap 5 JS Bundle (includes Popper) -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"
+    integrity="sha512-7Pi/otdlbbCR+LnW+F7PwFcSDJOuUJB3OxtEHbg4vSMvzvJjde4Po1v4BR9Gdc9aXNUNFVUY+SK51wWT8WF0Gg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <!-- Socket.io Client (available site-wide; connection managed per-page in Step 12) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Shared App JS -->
+  <script src="/js/main.js"></script>
+
+  <!-- Page-specific extra JS hook -->
+  <% if (typeof extraJs !== 'undefined') { %>
+    <%- extraJs %>
+  <% } %>
+
+  <script>
+    document.getElementById('footerYear').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>

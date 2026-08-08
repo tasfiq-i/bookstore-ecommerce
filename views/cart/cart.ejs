@@ -1,0 +1,125 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-4">
+  <div class="container">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Shopping Cart</li>
+      </ol>
+    </nav>
+
+    <h3 class="mb-4">Shopping Cart</h3>
+
+    <!-- Loading state -->
+    <div id="cartLoadingState" class="row g-4">
+      <div class="col-lg-8">
+        <div class="card"><div class="card-body">
+          <div class="skeleton mb-3" style="height: 100px;"></div>
+          <div class="skeleton" style="height: 100px;"></div>
+        </div></div>
+      </div>
+      <div class="col-lg-4">
+        <div class="skeleton" style="height: 240px;"></div>
+      </div>
+    </div>
+
+    <!-- Empty cart state -->
+    <div id="cartEmptyState" class="empty-state cart-empty-illustration d-none">
+      <i class="bi bi-cart-x"></i>
+      <h5 class="mt-3">Your cart is empty</h5>
+      <p class="mb-3">Looks like you haven't added any books yet.</p>
+      <a href="/books" class="btn btn-primary">Browse Books</a>
+    </div>
+
+    <!-- Cart content -->
+    <div id="cartContent" class="row g-4 d-none">
+      <!-- Items -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0"><span id="cartItemCount">0</span> item(s) in your cart</h6>
+              <button class="btn btn-sm btn-outline-danger" id="clearCartBtn">
+                <i class="bi bi-trash me-1"></i> Clear Cart
+              </button>
+            </div>
+            <div id="cartItemsList"></div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <a href="/books" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+          </a>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="col-lg-4">
+        <div class="card cart-summary-card">
+          <div class="card-body">
+            <h6 class="mb-3">Order Summary</h6>
+
+            <!-- Coupon -->
+            <div class="mb-3">
+              <label class="form-label small">Have a coupon code?</label>
+              <div id="couponInputArea">
+                <div class="input-group">
+                  <input type="text" class="form-control form-control-sm text-uppercase" id="couponCodeInput" placeholder="Enter code" maxlength="20" />
+                  <button class="btn btn-outline-primary btn-sm" type="button" id="applyCouponBtn">Apply</button>
+                </div>
+                <div id="couponFeedback" class="small mt-1"></div>
+              </div>
+              <div id="couponAppliedArea" class="coupon-applied-box d-none">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="bi bi-check-circle-fill text-success me-1"></i>
+                    <span class="fw-semibold" id="appliedCouponCode"></span>
+                  </div>
+                  <button class="btn btn-sm btn-link text-danger p-0" id="removeCouponBtn">Remove</button>
+                </div>
+              </div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between small mb-2">
+              <span class="text-muted">Subtotal</span>
+              <span id="summarySubtotal">৳0.00</span>
+            </div>
+            <div class="d-flex justify-content-between small mb-2 text-success d-none" id="summaryDiscountRow">
+              <span>Discount</span>
+              <span id="summaryDiscount">-৳0.00</span>
+            </div>
+            <div class="d-flex justify-content-between small mb-2">
+              <span class="text-muted">Shipping</span>
+              <span id="summaryShippingNote" class="text-muted">Calculated at checkout</span>
+            </div>
+            <hr />
+            <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+              <span>Total</span>
+              <span id="summaryTotal">৳0.00</span>
+            </div>
+
+            <div id="stockWarningBanner" class="alert alert-warning small py-2 d-none">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Some items exceed available stock. Please adjust quantities before checkout.
+            </div>
+
+            <button class="btn btn-primary w-100 py-2" id="proceedToCheckoutBtn">
+              <i class="bi bi-lock me-1"></i> Proceed to Checkout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/cart.js"></script>

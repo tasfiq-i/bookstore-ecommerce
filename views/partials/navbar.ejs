@@ -1,0 +1,115 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top py-2">
+  <div class="container">
+    <!-- Brand -->
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+      <i class="bi bi-book-half fs-3 text-primary"></i>
+      <span class="brand-text">BookStore</span>
+    </a>
+
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNavbar"
+      aria-controls="mainNavbar"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <!-- Main Nav Links -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/books">Catalog</a>
+        </li>
+      </ul>
+
+      <!-- Live Search -->
+      <form class="d-flex flex-grow-1 mx-lg-4 my-2 my-lg-0" id="navSearchForm" role="search" autocomplete="off">
+        <div class="input-group">
+          <input
+            type="search"
+            id="navSearchInput"
+            class="form-control"
+            placeholder="Search books, authors, ISBN..."
+            aria-label="Search"
+          />
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+        <!-- Live search suggestions dropdown -->
+        <div id="navSearchResults" class="nav-search-results shadow-sm d-none"></div>
+      </form>
+
+      <!-- Right-side Icons -->
+      <ul class="navbar-nav align-items-lg-center gap-lg-2">
+
+        <!-- Cart -->
+        <li class="nav-item">
+          <a class="nav-link position-relative px-3" href="/cart" id="cartNavLink">
+            <i class="bi bi-cart3 fs-5"></i>
+            <span
+              id="cartCountBadge"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+              style="font-size: 0.65rem;"
+            >
+              0
+              <span class="visually-hidden">items in cart</span>
+            </span>
+          </a>
+        </li>
+
+        <!-- Guest Auth Links -->
+        <li class="nav-item guest-only d-none">
+          <a class="nav-link" href="/login">Login</a>
+        </li>
+        <li class="nav-item guest-only d-none">
+          <a class="btn btn-primary btn-sm ms-lg-2" href="/register">Sign Up</a>
+        </li>
+
+        <!-- Authenticated User Dropdown -->
+        <li class="nav-item dropdown auth-only d-none">
+          
+            class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+            href="#"
+            id="userDropdown"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <img
+              id="navUserAvatar"
+              src="/images/default-avatar.png"
+              alt="User"
+              class="rounded-circle nav-avatar"
+              width="32"
+              height="32"
+            />
+            <span id="navUserName" class="d-none d-lg-inline">Account</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+            <li><h6 class="dropdown-header" id="dropdownUserName">User</h6></li>
+            <li><a class="dropdown-item" href="/profile"><i class="bi bi-person me-2"></i>My Profile</a></li>
+            <li><a class="dropdown-item" href="/orders"><i class="bi bi-bag-check me-2"></i>My Orders</a></li>
+            <li class="admin-only d-none"><hr class="dropdown-divider" /></li>
+            <li class="admin-only d-none">
+              <a class="dropdown-item" href="/admin"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</a>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <a class="dropdown-item text-danger" href="#" id="logoutBtn">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

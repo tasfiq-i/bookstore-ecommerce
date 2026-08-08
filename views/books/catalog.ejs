@@ -1,0 +1,161 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-4">
+  <div class="container">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Catalog</li>
+      </ol>
+    </nav>
+
+    <div class="row g-4">
+      <!-- ═══ Filter Sidebar ═══ -->
+      <div class="col-lg-3">
+        <div class="d-lg-none mb-3">
+          <button class="btn btn-outline-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#filterSidebarCollapse">
+            <i class="bi bi-funnel me-1"></i> Filters
+          </button>
+        </div>
+
+        <div class="collapse d-lg-block" id="filterSidebarCollapse">
+          <div class="filter-sidebar">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-bold">Filters</h6>
+              <button class="btn btn-sm btn-link text-decoration-none p-0" id="clearFiltersBtn">Clear All</button>
+            </div>
+
+            <!-- Price Range -->
+            <div class="filter-group">
+              <div class="filter-group-title">Price Range</div>
+              <div class="d-flex gap-2 price-range-inputs">
+                <input type="number" class="form-control form-control-sm" id="minPriceInput" placeholder="Min" min="0" />
+                <input type="number" class="form-control form-control-sm" id="maxPriceInput" placeholder="Max" min="0" />
+              </div>
+              <button class="btn btn-sm btn-outline-primary w-100 mt-2" id="applyPriceBtn">Apply</button>
+              <div class="small text-muted mt-1" id="priceRangeHint"></div>
+            </div>
+
+            <!-- Rating -->
+            <div class="filter-group">
+              <div class="filter-group-title">Minimum Rating</div>
+              <div id="ratingFilterStars">
+                <span class="rating-star-filter" data-rating="1"><i class="bi bi-star-fill"></i></span>
+                <span class="rating-star-filter" data-rating="2"><i class="bi bi-star-fill"></i></span>
+                <span class="rating-star-filter" data-rating="3"><i class="bi bi-star-fill"></i></span>
+                <span class="rating-star-filter" data-rating="4"><i class="bi bi-star-fill"></i></span>
+                <span class="rating-star-filter" data-rating="5"><i class="bi bi-star-fill"></i></span>
+                <span class="small text-muted ms-2" id="ratingFilterLabel">& up</span>
+              </div>
+            </div>
+
+            <!-- Category -->
+            <div class="filter-group">
+              <div class="filter-group-title">Category</div>
+              <div class="filter-check-list" id="categoryFilterList">
+                <div class="skeleton" style="height: 18px; width: 80%; margin-bottom: 10px;"></div>
+                <div class="skeleton" style="height: 18px; width: 60%;"></div>
+              </div>
+            </div>
+
+            <!-- Author -->
+            <div class="filter-group">
+              <div class="filter-group-title">Author</div>
+              <div class="filter-check-list" id="authorFilterList">
+                <div class="skeleton" style="height: 18px; width: 70%; margin-bottom: 10px;"></div>
+                <div class="skeleton" style="height: 18px; width: 55%;"></div>
+              </div>
+            </div>
+
+            <!-- Publisher -->
+            <div class="filter-group">
+              <div class="filter-group-title">Publisher</div>
+              <div class="filter-check-list" id="publisherFilterList">
+                <div class="skeleton" style="height: 18px; width: 65%; margin-bottom: 10px;"></div>
+                <div class="skeleton" style="height: 18px; width: 50%;"></div>
+              </div>
+            </div>
+
+            <!-- Format -->
+            <div class="filter-group">
+              <div class="filter-group-title">Format</div>
+              <div class="filter-check-list" id="formatFilterList"></div>
+            </div>
+
+            <!-- Stock -->
+            <div class="filter-group">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="inStockOnlyCheck" />
+                <label class="form-check-label small" for="inStockOnlyCheck">In Stock Only</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Main Catalog Area ═══ -->
+      <div class="col-lg-9">
+
+        <!-- Toolbar: search summary, sort, live status -->
+        <div class="catalog-toolbar d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+          <div>
+            <span id="resultsCountLabel" class="fw-semibold">Loading books...</span>
+            <span class="ms-2 small text-muted">
+              <span class="live-status-dot" id="liveStatusDot"></span><span id="liveStatusText">Connecting...</span>
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label for="sortSelect" class="small text-muted mb-0 d-none d-sm-inline">Sort by:</label>
+            <select class="form-select form-select-sm" id="sortSelect" style="width: auto;">
+              <option value="newest">Newest</option>
+              <option value="popular">Most Popular</option>
+              <option value="rating">Highest Rated</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="title_asc">Title: A-Z</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Active filter chips -->
+        <div id="activeFilterChips" class="mb-3"></div>
+
+        <!-- Book Grid -->
+        <div id="bookGrid" class="book-grid">
+          <!-- Skeleton loaders shown initially, replaced by AJAX render -->
+          <% for (let i = 0; i < 8; i++) { %>
+            <div class="card book-card">
+              <div class="skeleton" style="aspect-ratio: 3/4;"></div>
+              <div class="card-body">
+                <div class="skeleton mb-2" style="height: 14px; width: 90%;"></div>
+                <div class="skeleton mb-2" style="height: 12px; width: 60%;"></div>
+                <div class="skeleton" style="height: 20px; width: 40%;"></div>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Empty state -->
+        <div id="catalogEmptyState" class="empty-state d-none">
+          <i class="bi bi-search"></i>
+          <h5>No books found</h5>
+          <p class="mb-3">Try adjusting your filters or search terms</p>
+          <button class="btn btn-outline-primary btn-sm" id="emptyStateClearBtn">Clear Filters</button>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="mt-4" aria-label="Catalog pagination">
+          <ul class="pagination justify-content-center" id="catalogPagination"></ul>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/catalog.js"></script>

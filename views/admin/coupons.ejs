@@ -1,0 +1,169 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="admin-layout" id="adminGuard" style="display: none;">
+  <%- include('../partials/admin-sidebar', { activePage: 'coupons' }) %>
+
+  <main class="admin-content">
+    <div class="admin-topbar">
+      <div>
+        <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" id="openAdminSidebarBtn"><i class="bi bi-list"></i></button>
+        <h4 class="d-inline-block mb-0">Coupons</h4>
+        <p class="text-muted small mb-0 mt-1">Create and manage discount codes</p>
+      </div>
+      <button class="btn btn-primary btn-sm" id="addCouponBtn"><i class="bi bi-plus-lg me-1"></i> Create Coupon</button>
+    </div>
+
+    <div class="admin-table-card">
+      <div class="admin-table-toolbar">
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="search" class="form-control form-control-sm" id="couponsSearchInput" placeholder="Search code..." style="width: 200px;" />
+          <select class="form-select form-select-sm" id="couponsStatusFilter" style="width: 150px;">
+            <option value="">All Status</option>
+            <option value="live">Live</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+        <select class="form-select form-select-sm" id="couponsLimitSelect" style="width: 100px;">
+          <option value="10">10 / page</option>
+          <option value="25" selected>25 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table admin-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Discount</th>
+              <th>Min. Purchase</th>
+              <th>Usage</th>
+              <th>Expires</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="couponsTableBody">
+            <tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <span class="small text-muted" id="couponsResultsInfo"></span>
+        <nav><ul class="pagination pagination-sm mb-0" id="couponsPagination"></ul></nav>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="adminAccessDenied" class="container py-5 text-center d-none">
+  <i class="bi bi-shield-lock display-1 text-danger"></i>
+  <h4 class="mt-3">Access Denied</h4>
+  <a href="/" class="btn btn-primary mt-2">Back to Home</a>
+</div>
+
+<!-- Coupon Add/Edit Modal -->
+<div class="modal fade" id="couponModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="couponModalTitle">Create Coupon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="couponForm">
+          <input type="hidden" id="couponEditId" />
+
+          <div class="mb-3" id="autoGenerateRow">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="couponAutoGenerate" checked />
+              <label class="form-check-label small" for="couponAutoGenerate">Auto-generate code</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Coupon Code</label>
+            <div class="input-group">
+              <input type="text" class="form-control text-uppercase" id="couponCode" maxlength="20" placeholder="e.g. SAVE20-X7K9" disabled />
+              <button class="btn btn-outline-primary generate-code-btn" type="button" id="regenerateCodeBtn">
+                <i class="bi bi-shuffle me-1"></i> Generate
+              </button>
+            </div>
+            <input type="text" class="form-control mt-2" id="couponPrefix" placeholder="Optional prefix, e.g. SUMMER" maxlength="12" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description <span class="text-muted small">(optional)</span></label>
+            <input type="text" class="form-control" id="couponDescription" maxlength="300" placeholder="e.g. Summer Sale 20% off" />
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Discount Type</label>
+              <select class="form-select" id="couponDiscountType">
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed Amount (৳)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Discount Value</label>
+              <input type="number" class="form-control" id="couponDiscountValue" min="0" step="0.01" required />
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Min. Purchase Amount</label>
+              <input type="number" class="form-control" id="couponMinPurchase" min="0" step="0.01" value="0" />
+            </div>
+            <div class="col-md-6" id="maxDiscountWrap">
+              <label class="form-label">Max Discount Cap <span class="text-muted small">(% only)</span></label>
+              <input type="number" class="form-control" id="couponMaxDiscount" min="0" step="0.01" />
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Usage Limit <span class="text-muted small">(blank = unlimited)</span></label>
+              <input type="number" class="form-control" id="couponUsageLimit" min="1" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Expiry Date</label>
+              <input type="date" class="form-control" id="couponExpiryDate" required />
+            </div>
+          </div>
+
+          <div class="form-check" id="couponActiveRow">
+            <input class="form-check-input" type="checkbox" id="couponIsActive" checked />
+            <label class="form-check-label small" for="couponIsActive">Active</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveCouponBtn">Save Coupon</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Coupon Stats Modal -->
+<div class="modal fade" id="couponStatsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Coupon Usage Statistics</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="couponStatsModalBody">
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script src="/js/admin.js"></script>
+<script src="/js/admin-coupons.js"></script>

@@ -1,0 +1,198 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-4">
+  <div class="container">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">My Profile</li>
+      </ol>
+    </nav>
+
+    <div class="row g-4">
+      <!-- Sidebar -->
+      <div class="col-lg-3">
+        <div class="profile-sidebar mb-3">
+          <div class="profile-avatar-wrap">
+            <img id="profileAvatarImg" src="/images/default-avatar.png" alt="Avatar" />
+            <label class="profile-avatar-edit-btn" for="avatarUploadInput" title="Change photo">
+              <i class="bi bi-camera-fill"></i>
+            </label>
+            <input type="file" id="avatarUploadInput" accept="image/jpeg,image/png,image/webp" class="d-none" />
+          </div>
+          <h6 class="mb-0" id="sidebarUserName">—</h6>
+          <p class="small text-muted mb-0" id="sidebarUserEmail">—</p>
+        </div>
+
+        <div class="nav flex-column nav-pills profile-nav-tabs" role="tablist" aria-orientation="vertical">
+          <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabInfo" type="button">
+            <i class="bi bi-person me-2"></i>Profile Info
+          </button>
+          <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAddresses" type="button">
+            <i class="bi bi-geo-alt me-2"></i>Address Book
+          </button>
+          <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabPassword" type="button">
+            <i class="bi bi-shield-lock me-2"></i>Change Password
+          </button>
+          <a class="nav-link" href="/orders">
+            <i class="bi bi-bag-check me-2"></i>My Orders
+          </a>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="col-lg-9">
+        <div class="tab-content">
+
+          <!-- ═══ Profile Info Tab ═══ -->
+          <div class="tab-pane fade show active" id="tabInfo">
+            <div class="card">
+              <div class="card-body">
+                <h6 class="mb-4">Profile Information</h6>
+                <form id="profileInfoForm">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Full Name</label>
+                      <input type="text" class="form-control" id="infoName" name="name" required minlength="2" maxlength="50" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Email Address</label>
+                      <input type="email" class="form-control" id="infoEmail" disabled />
+                      <div class="form-text">Email cannot be changed for security reasons.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Phone Number</label>
+                      <input type="tel" class="form-control" id="infoPhone" name="phone" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Member Since</label>
+                      <input type="text" class="form-control" id="infoJoined" disabled />
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary mt-4" id="saveProfileBtn">
+                    <i class="bi bi-check-lg me-1"></i> Save Changes
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Address Book Tab ═══ -->
+          <div class="tab-pane fade" id="tabAddresses">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h6 class="mb-0">Saved Addresses</h6>
+                  <button class="btn btn-primary btn-sm" id="addNewAddressBtn">
+                    <i class="bi bi-plus-lg me-1"></i> Add Address
+                  </button>
+                </div>
+
+                <div id="addressBookList" class="row g-3"></div>
+
+                <div id="noAddressesMsg" class="empty-state d-none py-4">
+                  <i class="bi bi-geo-alt"></i>
+                  <p class="mb-0">No saved addresses yet. Add one for faster checkout.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Change Password Tab ═══ -->
+          <div class="tab-pane fade" id="tabPassword">
+            <div class="card">
+              <div class="card-body">
+                <h6 class="mb-4">Change Password</h6>
+                <form id="changePasswordForm" style="max-width: 480px;">
+                  <div class="mb-3">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" class="form-control" id="currentPassword" name="currentPassword" required />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" name="newPassword" required minlength="6" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" class="form-control" id="confirmNewPassword" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary" id="changePasswordBtn">
+                    <i class="bi bi-shield-check me-1"></i> Update Password
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Address Add/Edit Modal -->
+<div class="modal fade" id="addressModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addressModalTitle">Add Address</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addressForm">
+          <input type="hidden" id="addressEditId" value="" />
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-control" id="addrFullName" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" class="form-control" id="addrPhone" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Address Line 1</label>
+              <input type="text" class="form-control" id="addrLine1" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Address Line 2 <span class="text-muted">(optional)</span></label>
+              <input type="text" class="form-control" id="addrLine2" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">City</label>
+              <input type="text" class="form-control" id="addrCity" required />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">State/Division</label>
+              <input type="text" class="form-control" id="addrState" required />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Postal Code</label>
+              <input type="text" class="form-control" id="addrPostalCode" required />
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Country</label>
+              <input type="text" class="form-control" id="addrCountry" value="Bangladesh" required />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="addrIsDefault" />
+                <label class="form-check-label small" for="addrIsDefault">Set as default</label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveAddressModalBtn">Save Address</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/profile.js"></script>

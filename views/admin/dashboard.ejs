@@ -1,0 +1,164 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="admin-layout" id="adminGuard" style="display: none;">
+  <%- include('../partials/admin-sidebar', { activePage: 'dashboard' }) %>
+
+  <main class="admin-content">
+    <div class="admin-topbar">
+      <div>
+        <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" id="openAdminSidebarBtn">
+          <i class="bi bi-list"></i>
+        </button>
+        <h4 class="d-inline-block mb-0">Dashboard</h4>
+        <p class="text-muted small mb-0 mt-1">Welcome back! Here's what's happening with your store.</p>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span class="small text-muted">
+          <span class="live-status-dot" id="liveStatusDot"></span><span id="liveStatusText">Connecting...</span>
+        </span>
+        <select class="form-select form-select-sm" id="dateRangeSelect" style="width: auto;">
+          <option value="7">Last 7 Days</option>
+          <option value="30" selected>Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ═══ Stat Cards ═══ -->
+    <div class="row g-3 mb-4" id="statCardsRow">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-icon bg-revenue"><i class="bi bi-cash-stack"></i></div>
+          <div>
+            <div class="stat-card-value skeleton" style="width: 80px; height: 24px;" id="statTotalRevenue">—</div>
+            <div class="stat-card-label">Total Revenue</div>
+            <div class="stat-card-trend" id="statRevenueTrend"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-icon bg-orders"><i class="bi bi-bag-check"></i></div>
+          <div>
+            <div class="stat-card-value" id="statTotalOrders">—</div>
+            <div class="stat-card-label">Total Orders</div>
+            <div class="small text-muted" id="statPendingOrders"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-icon bg-books"><i class="bi bi-book"></i></div>
+          <div>
+            <div class="stat-card-value" id="statTotalBooks">—</div>
+            <div class="stat-card-label">Books in Catalog</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-icon bg-users"><i class="bi bi-people"></i></div>
+          <div>
+            <div class="stat-card-value" id="statTotalUsers">—</div>
+            <div class="stat-card-label">Registered Customers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Alert Banner (low/out of stock) ═══ -->
+    <div id="stockAlertBanner" class="alert alert-warning d-none d-flex justify-content-between align-items-center mb-4">
+      <div><i class="bi bi-exclamation-triangle-fill me-2"></i><span id="stockAlertText"></span></div>
+      <a href="/admin/books?filter=low-stock" class="btn btn-sm btn-warning">Review Stock</a>
+    </div>
+
+    <div class="row g-4">
+      <!-- ═══ Revenue Chart ═══ -->
+      <div class="col-lg-8">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h6 class="mb-0">Revenue Overview</h6>
+              <span class="small text-muted" id="chartSummaryText"></span>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="revenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Order Status Distribution ═══ -->
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h6 class="mb-0">Order Status</h6>
+          </div>
+          <div class="chart-canvas-wrap chart-sm">
+            <canvas id="orderStatusChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Revenue by Category ═══ -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h6 class="mb-0">Revenue by Category</h6>
+          </div>
+          <div class="chart-canvas-wrap chart-sm">
+            <canvas id="categoryRevenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Top Selling Books ═══ -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h6 class="mb-0">Top Selling Books</h6>
+          </div>
+          <div id="topBooksList"></div>
+        </div>
+      </div>
+
+      <!-- ═══ Recent Activity ═══ -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h6 class="mb-0">Recent Orders</h6>
+            <a href="/admin/orders" class="small text-decoration-none">View All</a>
+          </div>
+          <div id="recentOrdersFeed"></div>
+        </div>
+      </div>
+
+      <!-- ═══ Low Stock Report ═══ -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h6 class="mb-0">Low Stock Alerts</h6>
+            <a href="/admin/books" class="small text-decoration-none">Manage Books</a>
+          </div>
+          <div id="lowStockList"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Access denied state (shown if non-admin somehow lands here) -->
+<div id="adminAccessDenied" class="container py-5 text-center d-none">
+  <i class="bi bi-shield-lock display-1 text-danger"></i>
+  <h4 class="mt-3">Access Denied</h4>
+  <p class="text-muted">You don't have permission to view this page.</p>
+  <a href="/" class="btn btn-primary">Back to Home</a>
+</div>
+
+<%- include('../partials/footer') %>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" integrity="sha512-6b+Q0Wk2Q7WVMk4c8gYkuVNjR0dOnQ7HFzMzAvTU7OZfP7moTaFFBB3BsvhZeeIvUyIRWFYVIatn9xxdSHzXBQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="/js/admin.js"></script>

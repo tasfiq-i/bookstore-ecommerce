@@ -1,0 +1,103 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<div class="admin-layout" id="adminGuard" style="display: none;">
+  <%- include('../partials/admin-sidebar', { activePage: 'orders' }) %>
+
+  <main class="admin-content">
+    <div class="admin-topbar">
+      <div>
+        <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" id="openAdminSidebarBtn"><i class="bi bi-list"></i></button>
+        <h4 class="d-inline-block mb-0">Orders</h4>
+        <p class="text-muted small mb-0 mt-1">Manage and fulfill customer orders</p>
+      </div>
+      <span class="small text-muted">
+        <span class="live-status-dot" id="liveStatusDot"></span><span id="liveStatusText">Connecting...</span>
+      </span>
+    </div>
+
+    <!-- Status filter tabs -->
+    <ul class="nav nav-pills mb-3 flex-wrap gap-1" id="ordersStatusTabs">
+      <li class="nav-item"><button class="nav-link active" data-status="">All</button></li>
+      <li class="nav-item"><button class="nav-link" data-status="pending">Pending</button></li>
+      <li class="nav-item"><button class="nav-link" data-status="confirmed">Confirmed</button></li>
+      <li class="nav-item"><button class="nav-link" data-status="processing">Processing</button></li>
+      <li class="nav-item"><button class="nav-link" data-status="shipped">Shipped</button></li>
+      <li class="nav-item"><button class="nav-link" data-status="delivered">Delivered</button></li>
+      <li class="nav-item"><button class="nav-link" data-status="cancelled">Cancelled</button></li>
+    </ul>
+
+    <div class="admin-table-card">
+      <div class="admin-table-toolbar">
+        <div class="d-flex gap-2 flex-wrap align-items-center date-filter-row">
+          <input type="search" class="form-control form-control-sm" id="ordersSearchInput" placeholder="Order #, name, phone..." style="width: 200px;" />
+          <select class="form-select form-select-sm" id="ordersPaymentFilter" style="width: 150px;">
+            <option value="">All Payments</option>
+            <option value="pending">Payment Pending</option>
+            <option value="paid">Payment Paid</option>
+            <option value="failed">Payment Failed</option>
+          </select>
+          <input type="date" class="form-control form-control-sm" id="ordersStartDate" title="From date" />
+          <span class="small text-muted">to</span>
+          <input type="date" class="form-control form-control-sm" id="ordersEndDate" title="To date" />
+          <button class="btn btn-sm btn-outline-secondary" id="ordersClearFiltersBtn">Clear</button>
+        </div>
+        <select class="form-select form-select-sm" id="ordersLimitSelect" style="width: 100px;">
+          <option value="10">10 / page</option>
+          <option value="20" selected>20 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table admin-table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <span class="small text-muted" id="ordersResultsInfo"></span>
+        <nav><ul class="pagination pagination-sm mb-0" id="ordersPagination"></ul></nav>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="adminAccessDenied" class="container py-5 text-center d-none">
+  <i class="bi bi-shield-lock display-1 text-danger"></i>
+  <h4 class="mt-3">Access Denied</h4>
+  <a href="/" class="btn btn-primary mt-2">Back to Home</a>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal fade" id="orderDetailAdminModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="orderDetailModalBody">
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script src="/js/admin.js"></script>
+<script src="/js/admin-orders.js"></script>

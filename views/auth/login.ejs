@@ -1,0 +1,135 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-5">
+  <div class="container">
+    <div class="card auth-card">
+      <div class="auth-header">
+        <i class="bi bi-book-half fs-1 mb-2"></i>
+        <h3 class="mb-1 text-white">Welcome Back</h3>
+        <p class="mb-0 text-white-50 small">Login to continue shopping</p>
+      </div>
+
+      <div class="auth-body">
+        <form id="loginForm" novalidate>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-envelope"></i></span>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+              />
+              <span class="input-group-text bg-light toggle-password" style="cursor: pointer;">
+                <i class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="rememberMe" />
+              <label class="form-check-label small" for="rememberMe">Remember me</label>
+            </div>
+            <a href="/forgot-password" class="small text-decoration-none">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2" id="loginSubmitBtn">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+          </button>
+
+          <p class="text-center mt-4 mb-0 small">
+            Don't have an account? <a href="/register" class="fw-semibold">Sign up here</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+$(function () {
+  const { Api, Toast, ButtonState, TokenStore, extractErrorMessage, renderFieldErrors, updateAuthUI } = window.BookStore;
+
+  // Redirect already-logged-in users away from the login page
+  if (TokenStore.isLoggedIn()) {
+    window.location.href = '/';
+  }
+
+  // Toggle password visibility
+  $('.toggle-password').on('click', function () {
+    const $input = $('#password');
+    const $icon = $(this).find('i');
+    const isPassword = $input.attr('type') === 'password';
+    $input.attr('type', isPassword ? 'text' : 'password');
+    $icon.toggleClass('bi-eye bi-eye-slash');
+  });
+
+  $('#loginForm').on('submit', function (e) {
+    e.preventDefault();
+
+    const $form = $(this);
+    const $btn = $('#loginSubmitBtn');
+
+    const payload = {
+      email: $('#email').val().trim(),
+      password: $('#password').val()
+    };
+
+    ButtonState.loading($btn, ' Logging in...');
+
+    Api.post('/auth/login', payload)
+      .done((res) => {
+        const { user, token } = res.data;
+
+        TokenStore.setToken(token);
+        TokenStore.setUser(user);
+        updateAuthUI();
+
+        Toast.success(`Welcome back, ${user.name}!`);
+
+        // Redirect target: admin -> dashboard, customer -> homepage (or ?redirect= param if present)
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect');
+
+        setTimeout(() => {
+          if (redirectTo) {
+            window.location.href = redirectTo;
+          } else if (user.role === 'admin') {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/';
+          }
+        }, 600);
+      })
+      .fail((jqXHR) => {
+        renderFieldErrors($form, jqXHR);
+        Toast.error(extractErrorMessage(jqXHR));
+      })
+      .always(() => {
+        ButtonState.reset($btn);
+      });
+  });
+});
+</script>
