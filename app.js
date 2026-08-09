@@ -18,18 +18,23 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+
+app.use(express.static(path.join(__dirname, 'public')));
+
 // ─── Security Middleware ─────────────────────────────
 app.use(
   helmet({
-    contentSecurityPolicy: false // relaxed for CDN-hosted Bootstrap/jQuery/Socket.io client; tighten in production with explicit directives
+    contentSecurityPolicy: false // relaxed for CDN-hosted Bootstrap/jQuery/Socket.io client
   })
 );
 app.use(mongoSanitize()); // strips $ and . from req.body/query/params to prevent NoSQL injection
 app.use(xss()); // sanitizes user input from malicious HTML/JS
 
+// CORS setup with fallback for local development
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5000';
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: allowedOrigin,
     credentials: true
   })
 );
@@ -66,9 +71,6 @@ app.use(methodOverride('_method'));
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
-
-// ─── Static Files ─────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── API Routes ────────────────────────────────────────
 app.use('/api/auth', require('./routes/authRoutes'));

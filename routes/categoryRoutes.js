@@ -39,7 +39,6 @@ router.put(
   protect,
   authorize('admin'),
   uploadCategoryImage.single('image'),
-  createCategory ? [] : [], // placeholder removed below
   updateCategory
 );
 

@@ -746,6 +746,156 @@ a {
 }
 
 
+
+/* ═══════════════════════════════════════════════════════
+   Step 14 — Profile, Address Book, Order History
+   ═══════════════════════════════════════════════════════ */
+
+.profile-sidebar {
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 1rem;
+}
+.profile-avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: var(--shadow-sm);
+}
+.profile-avatar-edit-btn {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid #fff;
+  font-size: 0.85rem;
+}
+.profile-avatar-edit-btn:hover { background: var(--brand-dark); }
+
+.profile-nav-tabs .nav-link {
+  border-radius: var(--radius-sm);
+  color: #555;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  margin-bottom: 4px;
+}
+.profile-nav-tabs .nav-link.active {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+.profile-nav-tabs .nav-link i { width: 20px; }
+
+.address-book-card {
+  border: 1px solid #eee;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  position: relative;
+  transition: var(--transition-base);
+}
+.address-book-card:hover { box-shadow: var(--shadow-sm); }
+.address-book-card.is-default { border-color: var(--bs-primary); background: #f8fafb; }
+.address-book-actions { position: absolute; top: 10px; right: 10px; }
+
+/* ─── Order History ──────────────────────────────────── */
+.order-list-card {
+  border: 1px solid #eee;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: var(--transition-base);
+}
+.order-list-card:hover { box-shadow: var(--shadow-sm); }
+
+.order-status-badge {
+  font-size: 0.72rem;
+  padding: 0.4em 0.8em;
+  text-transform: capitalize;
+}
+.status-pending { background-color: #f39c12 !important; color: #fff; }
+.status-confirmed { background-color: #3498db !important; color: #fff; }
+.status-processing { background-color: #9b59b6 !important; color: #fff; }
+.status-shipped { background-color: #16a085 !important; color: #fff; }
+.status-delivered { background-color: #27ae60 !important; color: #fff; }
+.status-cancelled { background-color: #e74c3c !important; color: #fff; }
+
+.order-thumb-stack {
+  display: flex;
+  margin-left: -8px;
+}
+.order-thumb-stack img {
+  width: 44px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 2px solid #fff;
+  margin-left: -8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.order-timeline {
+  position: relative;
+  padding-left: 30px;
+}
+.order-timeline-item {
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+.order-timeline-item:last-child { padding-bottom: 0; }
+.order-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--bs-primary);
+}
+.order-timeline-item::after {
+  content: '';
+  position: absolute;
+  left: -19px;
+  top: 16px;
+  bottom: -8px;
+  width: 2px;
+  background: #e0e0e0;
+}
+.order-timeline-item:last-child::after { display: none; }
+
+/* Live socket status update pulse on order cards */
+.order-status-live-updated {
+  animation: pulse-highlight 1.4s ease;
+}
+
+/* Print-friendly styling for the dedicated order detail page */
+@media print {
+  .navbar, .footer-section, #toastContainer, .no-print { display: none !important; }
+  body { background: #fff; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+}
+
+
 /* ═══════════════════════════════════════════════════════
    Step 15 — Admin Dashboard
    ═══════════════════════════════════════════════════════ */
@@ -1205,4 +1355,171 @@ a {
   font-size: 0.72rem;
   color: #aaa;
   font-style: italic;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   Homepage
+   ═══════════════════════════════════════════════════════ */
+
+.hero-section {
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--bs-primary) 60%, #34495e 100%);
+  color: #fff;
+  padding: 5rem 0 6rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: rgba(230, 126, 34, 0.15);
+}
+.hero-section::after {
+  content: '';
+  position: absolute;
+  bottom: -120px;
+  left: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-title {
+  font-size: 2.6rem;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+.hero-title span { color: var(--brand-accent); }
+.hero-subtitle {
+  color: rgba(255,255,255,0.8);
+  font-size: 1.05rem;
+  max-width: 480px;
+  margin-bottom: 2rem;
+}
+.hero-search-form .input-group {
+  max-width: 520px;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.hero-search-form input {
+  border: none;
+  padding: 0.9rem 1.2rem;
+}
+.hero-search-form button {
+  padding: 0 1.6rem;
+}
+.hero-stats { display: flex; gap: 2.5rem; margin-top: 2.5rem; }
+.hero-stat-value { font-size: 1.6rem; font-weight: 700; color: #fff; }
+.hero-stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.65); }
+
+.hero-illustration {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+.hero-illustration i { font-size: 14rem; color: rgba(255,255,255,0.08); }
+
+/* ─── Category Pills ──────────────────────────────────── */
+.category-pill-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+.category-pill-card {
+  flex-shrink: 0;
+  width: 150px;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
+  text-decoration: none;
+  color: var(--brand-dark);
+}
+.category-pill-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  color: var(--bs-primary);
+}
+.category-pill-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(44,62,80,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+  font-size: 1.5rem;
+  color: var(--bs-primary);
+}
+.category-pill-card .cat-name { font-size: 0.85rem; font-weight: 600; }
+.category-pill-card .cat-count { font-size: 0.72rem; color: #999; }
+
+/* ─── Section Header w/ "View All" ───────────────────── */
+.home-section { padding: 3.5rem 0; }
+.home-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+}
+.home-section-header h2 { margin-bottom: 0.25rem; font-size: 1.6rem; }
+.home-section-header p { color: #888; margin-bottom: 0; font-size: 0.9rem; }
+
+/* ─── Promo Banner ────────────────────────────────────── */
+.promo-banner {
+  background: linear-gradient(120deg, var(--brand-accent), #d35400);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.promo-banner h3 { color: #fff; margin-bottom: 0.5rem; }
+.promo-banner p { color: rgba(255,255,255,0.85); margin-bottom: 0; }
+
+/* ─── Why Choose Us ───────────────────────────────────── */
+.feature-icon-box {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  background: rgba(44,62,80,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: var(--bs-primary);
+  margin-bottom: 1rem;
+}
+
+/* ─── Newsletter ──────────────────────────────────────── */
+.newsletter-section {
+  background: #f4f6f8;
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+.newsletter-form {
+  max-width: 460px;
+  margin: 1.5rem auto 0;
+}
+
+@media (max-width: 767.98px) {
+  .hero-title { font-size: 1.9rem; }
+  .hero-illustration { display: none; }
+  .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
 }
