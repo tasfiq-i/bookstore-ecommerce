@@ -1,8 +1,9 @@
 /* ═══════════════════════════════════════════════════════
    BookStore — Cart Page Logic
-   AJAX quantity update/remove, coupon apply/remove — all
-   without page reloads. Server response is always the
-   single source of truth for totals (never computed client-side).
+   Supports BOTH guest (localStorage-backed via GuestCart) and
+   authenticated (DB-backed via /api/cart) users through one
+   shared render() pipeline. Server/GuestCart.hydrate() responses
+   are shaped identically so render() never needs to branch.
    ═══════════════════════════════════════════════════════ */
 
 (function (window, $) {
@@ -12,20 +13,34 @@
 
   if (!$('#cartContent').length) return; // not on the cart page
 
-  // Redirect guests to login
-  if (!TokenStore.isLoggedIn()) {
-    window.location.href = '/login?redirect=/cart';
-  }
-
   const CartPage = {
     lastData: null,
+    isGuest: !TokenStore.isLoggedIn(),
 
     init() {
       this.fetchCart();
       this.bindEvents();
+
+      $(document).on('guestcart:changed', () => {
+        if (this.isGuest) this.fetchCart();
+      });
     },
 
     fetchCart() {
+      if (this.isGuest) {
+        window.GuestCart.hydrate()
+          .then((data) => {
+            this.lastData = data;
+            this.render(data);
+          })
+          .catch((err) => {
+            console.error(err);
+            $('#cartLoadingState').addClass('d-none');
+            $('#cartEmptyState').removeClass('d-none');
+          });
+        return;
+      }
+
       Api.get('/cart/validate')
         .done((res) => {
           this.lastData = res.data;
@@ -64,7 +79,14 @@
         $('#summaryDiscountRow').addClass('d-none');
       }
 
-      if (data.coupon) {
+      // Coupon UI: guests never see the input, they see a login prompt instead
+      const $couponWrap = $('#couponInputArea').closest('.mb-3');
+      if (this.isGuest) {
+        $couponWrap.html(
+          '<div class="alert alert-light border small mb-0"><i class="bi bi-info-circle me-1"></i>' +
+          '<a href="/login?redirect=/cart">Log in</a> to apply a coupon code.</div>'
+        );
+      } else if (data.coupon) {
         $('#couponInputArea').addClass('d-none');
         $('#couponAppliedArea').removeClass('d-none');
         $('#appliedCouponCode').text(data.coupon.code);
@@ -135,6 +157,11 @@
     updateQuantity(bookId, quantity) {
       if (quantity < 1) return;
 
+      if (this.isGuest) {
+        window.GuestCart.updateQuantity(bookId, quantity);
+        return; // re-render triggered by the guestcart:changed listener
+      }
+
       const $row = $(`.cart-item-row[data-book-id="${bookId}"]`);
       $row.css('opacity', 0.5);
 
@@ -145,11 +172,17 @@
         })
         .fail((jqXHR) => {
           Toast.error(extractErrorMessage(jqXHR));
-          this.fetchCart(); // resync UI with actual server state on failure
+          this.fetchCart();
         });
     },
 
     removeItem(bookId) {
+      if (this.isGuest) {
+        window.GuestCart.removeItem(bookId);
+        Toast.success('Item removed from cart');
+        return;
+      }
+
       const $row = $(`.cart-item-row[data-book-id="${bookId}"]`);
       $row.css('opacity', 0.4);
 
@@ -168,7 +201,6 @@
     bindEvents() {
       const self = this;
 
-      // Quantity +/-
       $(document).on('click', '.qty-increase-btn', function () {
         const bookId = $(this).data('book-id');
         const $input = $(`.qty-input[data-book-id="${bookId}"]`);
@@ -186,7 +218,6 @@
         self.updateQuantity(bookId, newVal);
       });
 
-      // Manual quantity typing (debounced-ish via change event)
       $(document).on('change', '.qty-input', function () {
         const bookId = $(this).data('book-id');
         const max = parseInt($(this).attr('max'), 10) || 999;
@@ -196,15 +227,18 @@
         self.updateQuantity(bookId, val);
       });
 
-      // Remove item
       $(document).on('click', '.remove-item-btn', function () {
         const bookId = $(this).data('book-id');
         self.removeItem(bookId);
       });
 
-      // Clear cart
       $('#clearCartBtn').on('click', function () {
         if (!confirm('Are you sure you want to clear your entire cart?')) return;
+
+        if (self.isGuest) {
+          window.GuestCart.clear();
+          return;
+        }
 
         Api.delete('/cart')
           .done((res) => {
@@ -215,8 +249,9 @@
           .fail((jqXHR) => Toast.error(extractErrorMessage(jqXHR)));
       });
 
-      // Apply coupon
+      // Coupon apply/remove — no-ops for guests since the input is hidden
       $('#applyCouponBtn').on('click', function () {
+        if (self.isGuest) return;
         const code = $('#couponCodeInput').val().trim();
         if (!code) {
           Toast.warning('Please enter a coupon code');
@@ -240,7 +275,6 @@
           });
       });
 
-      // Enter key applies coupon too
       $('#couponCodeInput').on('keypress', function (e) {
         if (e.which === 13) {
           e.preventDefault();
@@ -248,8 +282,8 @@
         }
       });
 
-      // Remove coupon
       $('#removeCouponBtn').on('click', function () {
+        if (self.isGuest) return;
         Api.delete('/cart/coupon')
           .done((res) => {
             Toast.success('Coupon removed');
@@ -259,7 +293,6 @@
           .fail((jqXHR) => Toast.error(extractErrorMessage(jqXHR)));
       });
 
-      // Proceed to checkout
       $('#proceedToCheckoutBtn').on('click', function () {
         if ($(this).prop('disabled')) return;
         window.location.href = '/checkout';

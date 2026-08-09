@@ -10,10 +10,6 @@
 
   // ─────────────────────────────────────────────────────
   // Token Storage Helpers
-  // JWT is also set as an httpOnly cookie by the server (Step 4),
-  // but we keep a copy in localStorage so jQuery AJAX calls can
-  // explicitly send it as a Bearer header — this keeps auth working
-  // identically whether cookies are blocked/sandboxed or not.
   // ─────────────────────────────────────────────────────
   const TokenStore = {
     KEY: 'bookstore_token',
@@ -51,8 +47,6 @@
 
   // ─────────────────────────────────────────────────────
   // JWT-Aware AJAX Wrapper
-  // Wraps $.ajax to auto-attach Authorization header and
-  // handle 401 (expired/invalid token) uniformly site-wide.
   // ─────────────────────────────────────────────────────
   const Api = {
     request(options) {
@@ -63,7 +57,7 @@
         method: options.method || 'GET',
         contentType: options.contentType !== undefined ? options.contentType : 'application/json',
         dataType: 'json',
-        xhrFields: { withCredentials: true }, // also send httpOnly cookie
+        xhrFields: { withCredentials: true },
         headers: {}
       };
 
@@ -71,12 +65,10 @@
         defaults.headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Merge custom headers if provided
       if (options.headers) {
         defaults.headers = Object.assign(defaults.headers, options.headers);
       }
 
-      // Auto-stringify JSON payloads (skip for FormData uploads)
       if (options.data !== undefined) {
         if (options.data instanceof FormData) {
           defaults.data = options.data;
@@ -98,12 +90,8 @@
       return $.ajax(finalOptions)
         .fail((jqXHR) => {
           if (jqXHR.status === 401) {
-            // Token invalid/expired — clear local session
             TokenStore.clearToken();
             BookStore.updateAuthUI();
-
-            // Don't force-redirect from public pages; just surface the message.
-            // Protected pages (profile/orders/admin/checkout) handle their own redirect.
           }
         });
     },
@@ -193,7 +181,7 @@
   };
 
   // ─────────────────────────────────────────────────────
-  // Button Loading State Helper (spinner inside submit buttons)
+  // Button Loading State Helper
   // ─────────────────────────────────────────────────────
   const ButtonState = {
     loading($btn, loadingText) {
@@ -211,7 +199,7 @@
   };
 
   // ─────────────────────────────────────────────────────
-  // Error Extraction Helper — normalizes ApiResponse.error() shape
+  // Error Extraction Helper
   // ─────────────────────────────────────────────────────
   function extractErrorMessage(jqXHR) {
     if (jqXHR.responseJSON) {
@@ -226,7 +214,7 @@
   }
 
   // ─────────────────────────────────────────────────────
-  // Field-level validation error rendering (express-validator shape)
+  // Field-level validation error rendering
   // ─────────────────────────────────────────────────────
   function renderFieldErrors($form, jqXHR) {
     $form.find('.is-invalid').removeClass('is-invalid');
@@ -244,16 +232,13 @@
   }
 
   // ─────────────────────────────────────────────────────
-  // Currency Formatter (Bangladeshi Taka)
+  // Currency / Date Formatters
   // ─────────────────────────────────────────────────────
   function formatCurrency(amount) {
     const num = Number(amount) || 0;
     return '৳' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  // ─────────────────────────────────────────────────────
-  // Date Formatter
-  // ─────────────────────────────────────────────────────
   function formatDate(dateString, options) {
     const date = new Date(dateString);
     return date.toLocaleDateString(
@@ -263,7 +248,7 @@
   }
 
   // ─────────────────────────────────────────────────────
-  // Debounce Helper (used by live search / filters)
+  // Debounce Helper
   // ─────────────────────────────────────────────────────
   function debounce(fn, delay = 350) {
     let timer;
@@ -299,13 +284,18 @@
   }
 
   // ─────────────────────────────────────────────────────
-  // Cart Count Badge Sync (navbar) — fetched on every page load
-  // Full cart AJAX logic lives in cart.js (later step); this is
-  // just the lightweight badge every page needs.
+  // Cart Count Badge Sync — checks GuestCart when logged out,
+  // hits the API when logged in
   // ─────────────────────────────────────────────────────
   function refreshCartBadge() {
     if (!TokenStore.isLoggedIn()) {
-      $('#cartCountBadge').addClass('d-none').text('0');
+      const count = window.GuestCart ? window.GuestCart.getCount() : 0;
+      const $badge = $('#cartCountBadge');
+      if (count > 0) {
+        $badge.text(count > 99 ? '99+' : count).removeClass('d-none');
+      } else {
+        $badge.addClass('d-none').text('0');
+      }
       return;
     }
 
@@ -319,13 +309,11 @@
           $badge.addClass('d-none').text('0');
         }
       })
-      .fail(() => {
-        // Silently ignore — badge just won't update, non-critical UX detail
-      });
+      .fail(() => {});
   }
 
   // ─────────────────────────────────────────────────────
-  // Logout Handler (bound globally since logout link is in every navbar)
+  // Logout Handler
   // ─────────────────────────────────────────────────────
   function handleLogout(e) {
     e.preventDefault();
@@ -342,7 +330,7 @@
   }
 
   // ─────────────────────────────────────────────────────
-  // Navbar Live Search (title/author quick suggestions)
+  // Navbar Live Search
   // ─────────────────────────────────────────────────────
   function initNavSearch() {
     const $input = $('#navSearchInput');
@@ -396,14 +384,12 @@
       if ($input.val().trim().length >= 2) $results.removeClass('d-none');
     });
 
-    // Close dropdown on outside click
     $(document).on('click', function (e) {
       if (!$(e.target).closest('#navSearchForm').length) {
         $results.addClass('d-none');
       }
     });
 
-    // Full search on form submit
     $form.on('submit', function (e) {
       e.preventDefault();
       const query = $input.val().trim();
@@ -422,8 +408,8 @@
     initNavSearch();
 
     $(document).on('click', '#logoutBtn', handleLogout);
+    $(document).on('guestcart:changed', refreshCartBadge);
 
-    // Auto-enable Bootstrap tooltips site-wide, if any exist on the page
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].forEach((el) => new bootstrap.Tooltip(el));
   });

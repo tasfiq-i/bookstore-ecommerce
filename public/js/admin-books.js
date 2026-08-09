@@ -354,20 +354,20 @@
       });
 
       // ── Inline stock quick-edit ──
-      $(document).on('click', '.edit-stock-btn', function () {
+      $(document).off('click', '.edit-stock-btn').on('click', '.edit-stock-btn', function () {
         const $row = $(this).closest('tr');
         $row.find('.stock-quick-edit .badge').addClass('d-none');
         $row.find('.stock-edit-input').removeClass('d-none').focus().select();
       });
 
-      $(document).on('keypress', '.stock-edit-input', function (e) {
+      $(document).off('keypress', '.stock-edit-input').on('keypress', '.stock-edit-input', function (e) {
         if (e.which === 13) {
           e.preventDefault();
           $(this).trigger('blur');
         }
       });
 
-      $(document).on('blur', '.stock-edit-input', function () {
+      $(document).off('blur', '.stock-edit-input').on('blur', '.stock-edit-input', function () {
         const bookId = $(this).data('id');
         const newStock = parseInt($(this).val(), 10);
         const book = self.books.find((b) => b._id === bookId);
@@ -379,36 +379,49 @@
         }
       });
 
-      // ── Image dropzone ──
-      $('#imageDropzone').on('click', () => $('#bookImagesInput').click());
-      $('#bookImagesInput').on('change', function () {
-        self.handleNewFiles(this.files);
+      // ── Image dropzone (Event Propagation Fix for Infinite Recursion) ──
+      $('#imageDropzone').off('click').on('click', function (e) {
+        // Prevent click loop if click came directly from input element itself
+        if ($(e.target).is('#bookImagesInput')) return;
+        $('#bookImagesInput').trigger('click');
+      });
+
+      $('#bookImagesInput').off('change').on('change', function () {
+        if (this.files && this.files.length) {
+          self.handleNewFiles(this.files);
+        }
         $(this).val('');
       });
 
-      $('#imageDropzone').on('dragover', function (e) {
+      $('#imageDropzone').off('dragover').on('dragover', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         $(this).addClass('dragover');
       });
-      $('#imageDropzone').on('dragleave', function () {
+
+      $('#imageDropzone').off('dragleave').on('dragleave', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         $(this).removeClass('dragover');
       });
-      $('#imageDropzone').on('drop', function (e) {
+
+      $('#imageDropzone').off('drop').on('drop', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         $(this).removeClass('dragover');
-        if (e.originalEvent.dataTransfer.files.length) {
+        if (e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files.length) {
           self.handleNewFiles(e.originalEvent.dataTransfer.files);
         }
       });
 
-      $(document).on('click', '.remove-existing-img', function () {
+      $(document).off('click', '.remove-existing-img').on('click', '.remove-existing-img', function () {
         const publicId = $(this).data('public-id');
         self.removedImageIds.push(publicId);
         self.existingImages = self.existingImages.filter((img) => img.publicId !== publicId);
         self.renderExistingImages();
       });
 
-      $(document).on('click', '.remove-new-img', function () {
+      $(document).off('click', '.remove-new-img').on('click', '.remove-new-img', function () {
         const index = parseInt($(this).data('index'), 10);
         self.newImageFiles.splice(index, 1);
         self.renderNewImagePreviews();
@@ -416,7 +429,7 @@
 
       // ── Filters ──
       let searchTimer;
-      $('#booksSearchInput').on('input', function () {
+      $('#booksSearchInput').off('input').on('input', function () {
         clearTimeout(searchTimer);
         const val = $(this).val();
         searchTimer = setTimeout(() => {
@@ -426,25 +439,25 @@
         }, 400);
       });
 
-      $('#booksCategoryFilter').on('change', function () {
+      $('#booksCategoryFilter').off('change').on('change', function () {
         self.state.category = $(this).val();
         self.state.page = 1;
         self.fetchBooks();
       });
 
-      $('#booksStockFilter').on('change', function () {
+      $('#booksStockFilter').off('change').on('change', function () {
         self.state.stockFilter = $(this).val();
         self.state.page = 1;
         self.fetchBooks();
       });
 
-      $('#booksLimitSelect').on('change', function () {
+      $('#booksLimitSelect').off('change').on('change', function () {
         self.state.limit = parseInt($(this).val(), 10);
         self.state.page = 1;
         self.fetchBooks();
       });
 
-      $(document).on('click', '#booksPagination .page-link', function (e) {
+      $(document).off('click', '#booksPagination .page-link').on('click', '#booksPagination .page-link', function (e) {
         e.preventDefault();
         self.state.page = parseInt($(this).data('page'), 10);
         self.fetchBooks();

@@ -11,7 +11,8 @@ const {
   validateCart,
   applyCoupon,
   removeCoupon,
-  getCartCount
+  getCartCount,
+  mergeGuestCart
 } = require('../controllers/cartController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -40,10 +41,13 @@ const couponValidation = [
     .isLength({ min: 4, max: 20 }).withMessage('Coupon code must be between 4 and 20 characters')
 ];
 
+const mergeCartValidation = [
+  body('items').isArray().withMessage('Items must be an array'),
+  body('items.*.bookId').optional().isMongoId().withMessage('Invalid book ID'),
+  body('items.*.quantity').optional().isInt({ min: 1 }).withMessage('Invalid quantity')
+];
+
 // ─── All cart routes require authentication ─────────────
-// Restricting to 'customer' role — admins manage the store, not shop in it,
-// but authorize('customer') can be relaxed to authorize('customer','admin')
-// if you want admins to also be able to test-purchase.
 router.use(protect, authorize('customer', 'admin'));
 
 router.get('/', getCart);
@@ -58,5 +62,7 @@ router.delete('/', clearCart);
 
 router.post('/coupon', couponValidation, validate, applyCoupon);
 router.delete('/coupon', removeCoupon);
+
+router.post('/merge', mergeCartValidation, validate, mergeGuestCart);
 
 module.exports = router;

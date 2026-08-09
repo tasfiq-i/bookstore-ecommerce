@@ -18,7 +18,6 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Security Middleware ─────────────────────────────
@@ -56,9 +55,18 @@ const authLimiter = rateLimit({
   message: { success: false, message: 'Too many auth attempts. Please try again in 15 minutes.' }
 });
 
+const guestOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many guest orders from this device. Please try again later.' }
+});
+
 app.use('/api/', globalLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/orders/guest', guestOrderLimiter);
 
 // ─── Body Parsing & Compression ──────────────────────
 app.use(express.json({ limit: '10mb' }));

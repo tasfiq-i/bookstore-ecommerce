@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Book = require('../models/Book');
@@ -7,22 +9,37 @@ const User = require('../models/User');
 const ApiResponse = require('../utils/apiResponse');
 const { AppError } = require('../middleware/errorHandler');
 const sendEmail = require('../utils/sendEmail');
+const generateInvoicePDF = require('../utils/generateInvoice');
 const { emitNewOrder, emitStockUpdate, emitOrderStatusChange } = require('../sockets/socketHandler');
 
-const SHIPPING_FLAT_RATE = 60; // BDT flat shipping rate; swap for zone-based logic later if needed
+const SHIPPING_FLAT_RATE = 60; // BDT flat shipping rate
 
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
+// Invoice helper — single source of truth for PDF generation,
+// used by placeOrder, placeGuestOrder, downloadInvoice, updateOrderStatus
+// ─────────────────────────────────────────────────────
+const ensureInvoiceGenerated = async (order) => {
+  const invoicesDir = path.join(__dirname, '..', 'public', 'invoices');
+
+  if (!fs.existsSync(invoicesDir)) {
+    fs.mkdirSync(invoicesDir, { recursive: true });
+  }
+
+  const fileName = `${order.orderNumber}.pdf`;
+  const filePath = path.join(invoicesDir, fileName);
+
+  await generateInvoicePDF(order, filePath);
+
+  return filePath;
+};
+
+// ═══════════════════════════════════════════════════════
+// AUTHENTICATED CHECKOUT
+// ═══════════════════════════════════════════════════════
+
 // @desc    Place a new order (Cash on Delivery)
 // @route   POST /api/orders
 // @access  Private/Customer
-// Body:
-//   useSavedAddress: boolean
-//   addressId: string (required if useSavedAddress = true)
-//   shippingAddress: object (required if useSavedAddress = false) -
-//     { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country }
-//   saveAddress: boolean (optional - if true and using a new address, save it to profile too)
-//   notes: string (optional)
-// ─────────────────────────────────────────────────────────
 exports.placeOrder = async (req, res, next) => {
   const session = await mongoose.startSession();
 
@@ -33,7 +50,6 @@ exports.placeOrder = async (req, res, next) => {
     await session.withTransaction(async () => {
       const { useSavedAddress, addressId, shippingAddress, saveAddress, notes } = req.body;
 
-      // ── Resolve shipping address ──
       const user = await User.findById(req.user._id).session(session);
 
       let resolvedAddress;
@@ -77,7 +93,6 @@ exports.placeOrder = async (req, res, next) => {
           country: (shippingAddress.country || 'Bangladesh').trim()
         };
 
-        // Optionally persist this one-time address to the user's profile
         if (saveAddress === true || saveAddress === 'true') {
           const isFirstAddress = user.addresses.length === 0;
           user.addresses.push({ ...resolvedAddress, isDefault: isFirstAddress });
@@ -85,7 +100,6 @@ exports.placeOrder = async (req, res, next) => {
         }
       }
 
-      // ── Load cart with fresh book data ──
       const cart = await Cart.findOne({ user: req.user._id })
         .populate({ path: 'items.book', select: 'title price discountPrice stock images isActive' })
         .session(session);
@@ -94,7 +108,6 @@ exports.placeOrder = async (req, res, next) => {
         throw new AppError('Your cart is empty. Add items before checking out.', 400);
       }
 
-      // ── Final atomic stock validation (last line of defense against overselling) ──
       const stockIssues = [];
       for (const item of cart.items) {
         if (!item.book || !item.book.isActive) {
@@ -112,7 +125,6 @@ exports.placeOrder = async (req, res, next) => {
         throw new AppError(`Cannot place order due to stock issues: ${stockIssues.join('; ')}`, 409);
       }
 
-      // ── Build order item snapshots ──
       const orderItems = cart.items.map((item) => {
         const effectivePrice = item.book.discountPrice != null ? item.book.discountPrice : item.book.price;
         return {
@@ -128,7 +140,6 @@ exports.placeOrder = async (req, res, next) => {
         orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100
       ) / 100;
 
-      // ── Resolve coupon (re-validated at checkout time, not trusted from cart) ──
       let discountAmount = 0;
       let couponCode = null;
       let coupon = null;
@@ -141,8 +152,6 @@ exports.placeOrder = async (req, res, next) => {
             discountAmount = Math.round(coupon.calculateDiscount(itemsPrice) * 100) / 100;
             couponCode = coupon.code;
           }
-          // If invalid at this exact moment, silently proceed without discount
-          // rather than blocking checkout — customer isn't penalized for a coupon expiring mid-checkout
         }
       }
 
@@ -152,11 +161,11 @@ exports.placeOrder = async (req, res, next) => {
         Math.round((itemsPrice - discountAmount + shippingPrice) * 100) / 100
       );
 
-      // ── Create the order ──
       const order = await Order.create(
         [
           {
             user: req.user._id,
+            isGuestOrder: false,
             items: orderItems,
             shippingAddress: resolvedAddress,
             paymentMethod: 'COD',
@@ -175,11 +184,9 @@ exports.placeOrder = async (req, res, next) => {
 
       createdOrder = order[0];
 
-      // ── Decrement stock for every book in the order (atomic, within transaction) ──
       for (const item of orderItems) {
         const book = await Book.findById(item.book).session(session);
         if (book.stock < item.quantity) {
-          // Re-check inside the transaction in case of a race condition since the earlier check
           throw new AppError(
             `"${book.title}" stock changed during checkout. Only ${book.stock} left. Please try again.`,
             409
@@ -190,17 +197,14 @@ exports.placeOrder = async (req, res, next) => {
         await book.save({ session });
       }
 
-      // ── Increment coupon usage count ──
       if (coupon && couponCode) {
         coupon.usedCount += 1;
         await coupon.save({ session });
       }
 
-      // ── Clear the cart ──
       cart.clearCart();
       await cart.save({ session });
 
-      // Prepare email payload for after successful commit
       emailPayload = {
         to: req.user.email,
         customerName: resolvedAddress.fullName,
@@ -215,23 +219,30 @@ exports.placeOrder = async (req, res, next) => {
       };
     });
 
-    // ── Post-transaction side effects (only run if transaction committed successfully) ──
-
-    // Real-time: notify admin dashboard of new order
     const populatedOrder = await Order.findById(createdOrder._id).populate('user', 'name email');
     emitNewOrder(populatedOrder);
 
-    // Real-time: notify catalog clients of stock changes for each affected book
     for (const item of populatedOrder.items) {
       const updatedBook = await Book.findById(item.book);
       if (updatedBook) emitStockUpdate(updatedBook);
     }
 
-    // Send order confirmation email (non-blocking — order is already placed successfully)
+    let invoicePath = null;
+    try {
+      invoicePath = await ensureInvoiceGenerated(populatedOrder);
+      populatedOrder.invoiceUrl = `/invoices/${populatedOrder.orderNumber}.pdf`;
+      await Order.findByIdAndUpdate(populatedOrder._id, { invoiceUrl: populatedOrder.invoiceUrl });
+    } catch (invoiceError) {
+      console.error('Invoice generation failed (order still placed successfully):', invoiceError.message);
+    }
+
     sendEmail({
       to: emailPayload.to,
       template: 'orderConfirmation',
-      data: emailPayload
+      data: emailPayload,
+      attachments: invoicePath
+        ? [{ filename: `Invoice-${populatedOrder.orderNumber}.pdf`, path: invoicePath }]
+        : []
     }).catch((err) => console.error('Order confirmation email failed:', err.message));
 
     return ApiResponse.success(res, 201, 'Order placed successfully', { order: populatedOrder });
@@ -241,6 +252,217 @@ exports.placeOrder = async (req, res, next) => {
     session.endSession();
   }
 };
+
+// ═══════════════════════════════════════════════════════
+// GUEST CHECKOUT
+// ═══════════════════════════════════════════════════════
+
+// @desc    Place a guest order (no account required)
+// @route   POST /api/orders/guest
+// @access  Public
+exports.placeGuestOrder = async (req, res, next) => {
+  const session = await mongoose.startSession();
+
+  try {
+    let createdOrder = null;
+    let emailPayload = null;
+
+    await session.withTransaction(async () => {
+      const { items, guestInfo, shippingAddress, notes } = req.body;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        throw new AppError('Your cart is empty. Add items before checking out.', 400);
+      }
+      if (!guestInfo || !guestInfo.name || !guestInfo.email || !guestInfo.phone) {
+        throw new AppError('Please provide your name, email, and phone number', 400);
+      }
+
+      const required = ['fullName', 'phone', 'addressLine1', 'city', 'state', 'postalCode'];
+      const missing = required.filter((f) => !shippingAddress || !shippingAddress[f] || !shippingAddress[f].trim());
+      if (missing.length > 0) {
+        throw new AppError(`Missing required shipping address fields: ${missing.join(', ')}`, 400);
+      }
+
+      const resolvedAddress = {
+        fullName: shippingAddress.fullName.trim(),
+        phone: shippingAddress.phone.trim(),
+        addressLine1: shippingAddress.addressLine1.trim(),
+        addressLine2: (shippingAddress.addressLine2 || '').trim(),
+        city: shippingAddress.city.trim(),
+        state: shippingAddress.state.trim(),
+        postalCode: shippingAddress.postalCode.trim(),
+        country: (shippingAddress.country || 'Bangladesh').trim()
+      };
+
+      const orderItems = [];
+      const stockIssues = [];
+
+      for (const reqItem of items) {
+        if (!reqItem.bookId || !mongoose.Types.ObjectId.isValid(reqItem.bookId)) {
+          throw new AppError('Invalid item in cart', 400);
+        }
+        const qty = parseInt(reqItem.quantity, 10);
+        if (!qty || qty < 1) {
+          throw new AppError('Invalid quantity in cart', 400);
+        }
+
+        const book = await Book.findById(reqItem.bookId).session(session);
+
+        if (!book || !book.isActive) {
+          stockIssues.push('An item in your cart is no longer available');
+          continue;
+        }
+        if (qty > book.stock) {
+          stockIssues.push(`"${book.title}" — only ${book.stock} unit(s) left, but ${qty} requested`);
+          continue;
+        }
+
+        const effectivePrice = book.discountPrice != null ? book.discountPrice : book.price;
+        orderItems.push({
+          book: book._id,
+          title: book.title,
+          image: book.images && book.images.length > 0 ? book.images[0].url : '',
+          quantity: qty,
+          price: effectivePrice
+        });
+      }
+
+      if (stockIssues.length > 0) {
+        throw new AppError(`Cannot place order: ${stockIssues.join('; ')}`, 409);
+      }
+      if (orderItems.length === 0) {
+        throw new AppError('No valid items found in your cart', 400);
+      }
+
+      const itemsPrice = Math.round(
+        orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100
+      ) / 100;
+
+      const shippingPrice = SHIPPING_FLAT_RATE;
+      const totalPrice = Math.round((itemsPrice + shippingPrice) * 100) / 100;
+
+      const order = await Order.create(
+        [
+          {
+            user: null,
+            isGuestOrder: true,
+            guestInfo: {
+              name: guestInfo.name.trim(),
+              email: guestInfo.email.trim().toLowerCase(),
+              phone: guestInfo.phone.trim()
+            },
+            items: orderItems,
+            shippingAddress: resolvedAddress,
+            paymentMethod: 'COD',
+            paymentStatus: 'pending',
+            itemsPrice,
+            discountAmount: 0,
+            couponCode: null,
+            shippingPrice,
+            totalPrice,
+            status: 'pending',
+            notes: notes ? notes.trim().slice(0, 500) : ''
+          }
+        ],
+        { session }
+      );
+
+      createdOrder = order[0];
+
+      for (const item of orderItems) {
+        const book = await Book.findById(item.book).session(session);
+        if (book.stock < item.quantity) {
+          throw new AppError(`"${book.title}" stock changed during checkout. Please try again.`, 409);
+        }
+        book.stock -= item.quantity;
+        book.soldCount += item.quantity;
+        await book.save({ session });
+      }
+
+      emailPayload = {
+        to: guestInfo.email.trim().toLowerCase(),
+        customerName: resolvedAddress.fullName,
+        orderNumber: createdOrder.orderNumber,
+        items: orderItems,
+        itemsPrice,
+        discountAmount: 0,
+        couponCode: null,
+        shippingPrice,
+        totalPrice,
+        shippingAddress: resolvedAddress
+      };
+    });
+
+    emitNewOrder(createdOrder);
+
+    for (const item of createdOrder.items) {
+      const updatedBook = await Book.findById(item.book);
+      if (updatedBook) emitStockUpdate(updatedBook);
+    }
+
+    let invoicePath = null;
+    try {
+      invoicePath = await ensureInvoiceGenerated(createdOrder);
+      createdOrder.invoiceUrl = `/invoices/${createdOrder.orderNumber}.pdf`;
+      await Order.findByIdAndUpdate(createdOrder._id, { invoiceUrl: createdOrder.invoiceUrl });
+    } catch (e) {
+      console.error('Guest invoice generation failed:', e.message);
+    }
+
+    sendEmail({
+      to: emailPayload.to,
+      template: 'orderConfirmation',
+      data: emailPayload,
+      attachments: invoicePath ? [{ filename: `Invoice-${createdOrder.orderNumber}.pdf`, path: invoicePath }] : []
+    }).catch((err) => console.error('Guest order confirmation email failed:', err.message));
+
+    return ApiResponse.success(res, 201, 'Order placed successfully', {
+      order: {
+        _id: createdOrder._id,
+        orderNumber: createdOrder.orderNumber,
+        totalPrice: createdOrder.totalPrice,
+        status: createdOrder.status,
+        guestEmail: emailPayload.to
+      }
+    });
+  } catch (error) {
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};
+
+// @desc    Guest order lookup by order number + email
+// @route   GET /api/orders/guest/:orderNumber
+// @access  Public
+exports.getGuestOrder = async (req, res, next) => {
+  try {
+    const { orderNumber } = req.params;
+    const { email } = req.query;
+
+    if (!email) {
+      return next(new AppError('Email is required to look up a guest order', 400));
+    }
+
+    const order = await Order.findOne({
+      orderNumber,
+      isGuestOrder: true,
+      'guestInfo.email': email.trim().toLowerCase()
+    });
+
+    if (!order) {
+      return next(new AppError('Order not found. Please check your order number and email.', 404));
+    }
+
+    return ApiResponse.success(res, 200, 'Order fetched successfully', { order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// SHARED (AUTHENTICATED) ORDER ACTIONS
+// ═══════════════════════════════════════════════════════
 
 // @desc    Get logged-in user's order history
 // @route   GET /api/orders/my-orders
@@ -282,7 +504,11 @@ exports.getOrder = async (req, res, next) => {
       return next(new AppError('Order not found', 404));
     }
 
-    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (order.isGuestOrder) {
+      if (req.user.role !== 'admin') {
+        return next(new AppError('You are not authorized to view this order', 403));
+      }
+    } else if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return next(new AppError('You are not authorized to view this order', 403));
     }
 
@@ -309,7 +535,10 @@ exports.cancelOrder = async (req, res, next) => {
         throw new AppError('Order not found', 404);
       }
 
-      if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      if (order.isGuestOrder && req.user.role !== 'admin') {
+        throw new AppError('You are not authorized to cancel this order', 403);
+      }
+      if (!order.isGuestOrder && order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         throw new AppError('You are not authorized to cancel this order', 403);
       }
 
@@ -320,7 +549,6 @@ exports.cancelOrder = async (req, res, next) => {
         );
       }
 
-      // ── Restore stock for every item ──
       for (const item of order.items) {
         const book = await Book.findById(item.book).session(session);
         if (book) {
@@ -336,18 +564,20 @@ exports.cancelOrder = async (req, res, next) => {
       updatedOrder = order;
     });
 
-    // Real-time: reflect restored stock on catalog + notify customer
     for (const item of updatedOrder.items) {
       const book = await Book.findById(item.book);
       if (book) emitStockUpdate(book);
     }
     emitOrderStatusChange(updatedOrder);
 
+    const notifyEmail = updatedOrder.isGuestOrder ? updatedOrder.guestInfo.email : req.user.email;
+    const notifyName = updatedOrder.isGuestOrder ? updatedOrder.guestInfo.name : req.user.name;
+
     sendEmail({
-      to: req.user.email,
+      to: notifyEmail,
       template: 'orderStatusUpdate',
       data: {
-        customerName: req.user.name,
+        customerName: notifyName,
         orderNumber: updatedOrder.orderNumber,
         status: 'cancelled',
         note: updatedOrder.cancellationReason
@@ -373,7 +603,7 @@ exports.reorder = async (req, res, next) => {
       return next(new AppError('Order not found', 404));
     }
 
-    if (order.user.toString() !== req.user._id.toString()) {
+    if (order.isGuestOrder || order.user.toString() !== req.user._id.toString()) {
       return next(new AppError('You are not authorized to reorder this order', 403));
     }
 
@@ -412,6 +642,46 @@ exports.reorder = async (req, res, next) => {
   }
 };
 
+// @desc    Download/view the PDF invoice for an order (owner or admin only)
+// @route   GET /api/orders/:id/invoice
+// @access  Private
+exports.downloadInvoice = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
+
+    if (!order) {
+      return next(new AppError('Order not found', 404));
+    }
+
+    if (order.isGuestOrder) {
+      if (req.user.role !== 'admin') {
+        return next(new AppError('You are not authorized to access this invoice', 403));
+      }
+    } else if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return next(new AppError('You are not authorized to access this invoice', 403));
+    }
+
+    const invoicesDir = path.join(__dirname, '..', 'public', 'invoices');
+    const filePath = path.join(invoicesDir, `${order.orderNumber}.pdf`);
+
+    if (!fs.existsSync(filePath)) {
+      await ensureInvoiceGenerated(order);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Invoice-${order.orderNumber}.pdf"`);
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', () => {
+      next(new AppError('Failed to stream invoice file', 500));
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ═══════════════════════════════════════════════════════
 // ADMIN ORDER MANAGEMENT
 // ═══════════════════════════════════════════════════════
@@ -431,7 +701,8 @@ exports.getAllOrders = async (req, res, next) => {
       filter.$or = [
         { orderNumber: { $regex: search, $options: 'i' } },
         { 'shippingAddress.fullName': { $regex: search, $options: 'i' } },
-        { 'shippingAddress.phone': { $regex: search, $options: 'i' } }
+        { 'shippingAddress.phone': { $regex: search, $options: 'i' } },
+        { 'guestInfo.email': { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -495,7 +766,6 @@ exports.updateOrderStatus = async (req, res, next) => {
         throw new AppError('Cannot change status of a delivered order', 400);
       }
 
-      // If admin cancels an order that was still in-progress, restore stock
       if (status === 'cancelled' && order.status !== 'cancelled') {
         for (const item of order.items) {
           const book = await Book.findById(item.book).session(session);
@@ -507,7 +777,6 @@ exports.updateOrderStatus = async (req, res, next) => {
         }
       }
 
-      // Mark COD payment as paid upon delivery
       if (status === 'delivered') {
         order.paymentStatus = 'paid';
       }
@@ -520,10 +789,10 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     const populatedOrder = await Order.findById(updatedOrder._id).populate('user', 'name email');
 
-    // Real-time: notify the specific customer of their order status change
-    emitOrderStatusChange(populatedOrder);
+    if (!populatedOrder.isGuestOrder) {
+      emitOrderStatusChange(populatedOrder);
+    }
 
-    // If cancelled by admin, also broadcast restored stock to catalog
     if (status === 'cancelled') {
       for (const item of populatedOrder.items) {
         const book = await Book.findById(item.book);
@@ -531,11 +800,18 @@ exports.updateOrderStatus = async (req, res, next) => {
       }
     }
 
+    ensureInvoiceGenerated(populatedOrder).catch((err) =>
+      console.error('Invoice regeneration after status update failed:', err.message)
+    );
+
+    const notifyEmail = populatedOrder.isGuestOrder ? populatedOrder.guestInfo.email : populatedOrder.user.email;
+    const notifyName = populatedOrder.isGuestOrder ? populatedOrder.guestInfo.name : populatedOrder.user.name;
+
     sendEmail({
-      to: populatedOrder.user.email,
+      to: notifyEmail,
       template: 'orderStatusUpdate',
       data: {
-        customerName: populatedOrder.user.name,
+        customerName: notifyName,
         orderNumber: populatedOrder.orderNumber,
         status: populatedOrder.status,
         note: note || ''
@@ -550,7 +826,7 @@ exports.updateOrderStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Update payment status (admin) — mainly for COD confirmation
+// @desc    Update payment status (admin)
 // @route   PUT /api/orders/:id/payment-status
 // @access  Private/Admin
 exports.updatePaymentStatus = async (req, res, next) => {

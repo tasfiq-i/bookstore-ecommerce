@@ -1,7 +1,9 @@
 /* ═══════════════════════════════════════════════════════
    BookStore — Checkout Page Logic
-   Saved-address vs new-address toggle, live order summary,
-   final order placement against /api/orders (Step 8).
+   Guests: contact info + one-time address, submits to
+   POST /api/orders/guest, cart sourced from GuestCart (localStorage).
+   Authenticated: saved/new address toggle, submits to
+   POST /api/orders, cart sourced from /api/cart/validate.
    ═══════════════════════════════════════════════════════ */
 
 (function (window, $) {
@@ -11,14 +13,11 @@
 
   if (!$('#checkoutForm').length) return; // not on the checkout page
 
-  if (!TokenStore.isLoggedIn()) {
-    window.location.href = '/login?redirect=/checkout';
-  }
-
   const CheckoutPage = {
     cartData: null,
     userAddresses: [],
     selectedAddressId: null,
+    isGuest: !TokenStore.isLoggedIn(),
 
     init() {
       this.loadData();
@@ -26,7 +25,37 @@
     },
 
     loadData() {
-      // Fetch cart validity + user profile (for saved addresses) in parallel
+      if (this.isGuest) {
+        // Guests: show contact-info card, force "new address" mode, hide
+        // saved-address UI and the save-to-profile checkbox (no profile exists)
+        $('#guestContactCard').removeClass('d-none');
+        $('input[name="addressMode"]').closest('.mb-3').addClass('d-none');
+        $('#savedAddressSection').addClass('d-none');
+        $('#newAddressSection').removeClass('d-none');
+        $('#saveAddressCheck').closest('.form-check').addClass('d-none');
+
+        window.GuestCart.hydrate()
+          .then((cartData) => {
+            this.cartData = cartData;
+
+            if (!cartData.items || cartData.items.length === 0) {
+              this.showState('empty');
+              return;
+            }
+            if (cartData.hasStockIssues) {
+              this.showState('stockIssue');
+              return;
+            }
+            this.showState('form');
+            this.renderOrderSummary(cartData);
+          })
+          .catch((err) => {
+            console.error(err);
+            this.showState('empty');
+          });
+        return;
+      }
+
       $.when(Api.get('/cart/validate'), Api.get('/auth/me'))
         .done((cartRes, userRes) => {
           const cartData = cartRes[0].data;
@@ -79,7 +108,7 @@
 
       $('#checkoutItemsList').html(itemsHtml);
 
-      const shipping = 60; // matches SHIPPING_FLAT_RATE in orderController.js (Step 8)
+      const shipping = 60; // matches SHIPPING_FLAT_RATE in orderController.js
       const subtotal = data.subtotal;
       const discount = data.discountAmount || 0;
       const total = Math.max(0, subtotal - discount + shipping);
@@ -101,7 +130,6 @@
       if (this.userAddresses.length === 0) {
         $('#savedAddressList').empty();
         $('#noSavedAddressMsg').removeClass('d-none');
-        // No saved addresses — force the "new address" mode
         $('#modeNew').prop('checked', true).trigger('change');
         $('#modeSaved').prop('disabled', true);
         return;
@@ -142,7 +170,6 @@
     bindEvents() {
       const self = this;
 
-      // Address mode toggle
       $('input[name="addressMode"]').on('change', function () {
         const mode = $(this).val();
         if (mode === 'saved') {
@@ -154,14 +181,12 @@
         }
       });
 
-      // Select a saved address card
       $(document).on('click', '.address-option-card', function () {
         $('.address-option-card').removeClass('selected');
         $(this).addClass('selected');
         self.selectedAddressId = $(this).data('address-id');
       });
 
-      // Form submit — place order
       $('#checkoutForm').on('submit', function (e) {
         e.preventDefault();
         self.placeOrder();
@@ -195,7 +220,24 @@
       return isValid;
     },
 
+    collectAddressFields() {
+      return {
+        fullName: $('#newFullName').val().trim(),
+        phone: $('#newPhone').val().trim(),
+        addressLine1: $('#newAddressLine1').val().trim(),
+        addressLine2: $('#newAddressLine2').val().trim(),
+        city: $('#newCity').val().trim(),
+        state: $('#newState').val().trim(),
+        postalCode: $('#newPostalCode').val().trim(),
+        country: $('#newCountry').val().trim() || 'Bangladesh'
+      };
+    },
+
     placeOrder() {
+      if (this.isGuest) {
+        return this.placeGuestOrder();
+      }
+
       const mode = $('input[name="addressMode"]:checked').val();
       const payload = { paymentMethod: 'COD' };
 
@@ -212,16 +254,7 @@
           return;
         }
         payload.useSavedAddress = false;
-        payload.shippingAddress = {
-          fullName: $('#newFullName').val().trim(),
-          phone: $('#newPhone').val().trim(),
-          addressLine1: $('#newAddressLine1').val().trim(),
-          addressLine2: $('#newAddressLine2').val().trim(),
-          city: $('#newCity').val().trim(),
-          state: $('#newState').val().trim(),
-          postalCode: $('#newPostalCode').val().trim(),
-          country: $('#newCountry').val().trim() || 'Bangladesh'
-        };
+        payload.shippingAddress = this.collectAddressFields();
         payload.saveAddress = $('#saveAddressCheck').is(':checked');
       }
 
@@ -245,7 +278,61 @@
           renderFieldErrors($('#checkoutForm'), jqXHR);
           Toast.error(extractErrorMessage(jqXHR));
 
-          // If it was a stock conflict (409), best to refresh the page state entirely
+          if (jqXHR.status === 409) {
+            setTimeout(() => this.loadData(), 1500);
+          }
+        })
+        .always(() => {
+          ButtonState.reset($btn);
+        });
+    },
+
+    placeGuestOrder() {
+      const guestName = $('#guestName').val().trim();
+      const guestEmail = $('#guestEmail').val().trim();
+      const guestPhone = $('#guestPhone').val().trim();
+
+      if (!guestName || !guestEmail || !guestPhone) {
+        Toast.warning('Please fill in your name, email, and phone number');
+        return;
+      }
+      if (!this.validateNewAddress()) {
+        Toast.warning('Please fill in all required address fields');
+        return;
+      }
+
+      const items = window.GuestCart.getItems();
+      if (items.length === 0) {
+        Toast.error('Your cart is empty');
+        return;
+      }
+
+      const notes = $('#orderNotes').val().trim();
+
+      const payload = {
+        items,
+        guestInfo: { name: guestName, email: guestEmail, phone: guestPhone },
+        shippingAddress: this.collectAddressFields()
+      };
+      if (notes) payload.notes = notes;
+
+      const $btn = $('#placeOrderBtn');
+      ButtonState.loading($btn, ' Placing your order...');
+
+      Api.post('/orders/guest', payload)
+        .done((res) => {
+          const order = res.data.order;
+          window.GuestCart.clear();
+          Toast.success(`Order ${order.orderNumber} placed! A confirmation has been emailed to ${order.guestEmail}.`);
+
+          setTimeout(() => {
+            window.location.href = `/order-confirmation?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.guestEmail)}`;
+          }, 1500);
+        })
+        .fail((jqXHR) => {
+          renderFieldErrors($('#checkoutForm'), jqXHR);
+          Toast.error(extractErrorMessage(jqXHR));
+
           if (jqXHR.status === 409) {
             setTimeout(() => this.loadData(), 1500);
           }

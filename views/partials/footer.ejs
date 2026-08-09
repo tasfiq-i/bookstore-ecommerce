@@ -74,11 +74,16 @@
     referrerpolicy="no-referrer"
   ></script>
 
-  <!-- Socket.io Client (available site-wide; connection managed per-page in Step 12) -->
+  <!-- Socket.io Client Library (raw lib; connection managed by socket-client.js) -->
   <script src="/socket.io/socket.io.js"></script>
 
-  <!-- Shared App JS -->
+  <!-- ═══ App scripts — load order matters ═══ -->
+  <!-- main.js: TokenStore, Api, Toast, etc. — everything else depends on this -->
   <script src="/js/main.js"></script>
+  <!-- guest-cart.js: window.GuestCart — depends on window.BookStore -->
+  <script src="/js/guest-cart.js"></script>
+  <!-- socket-client.js: window.BookStoreSocket — depends on TokenStore -->
+  <script src="/js/socket-client.js"></script>
 
   <!-- Page-specific extra JS hook -->
   <% if (typeof extraJs !== 'undefined') { %>

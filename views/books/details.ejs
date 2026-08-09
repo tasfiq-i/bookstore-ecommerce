@@ -77,31 +77,40 @@
           <div class="mb-3" id="liveStockMessage"></div>
 
           <!-- Add to Cart Panel -->
-          <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-            <div class="quantity-selector">
-              <button type="button" id="qtyDecreaseBtn">−</button>
-              <input type="number" id="qtyInput" value="1" min="1" />
-              <button type="button" id="qtyIncreaseBtn">+</button>
-            </div>
-            <button class="btn btn-primary px-4 py-2 btn-add-cart" id="addToCartBtn">
-              <i class="bi bi-cart-plus me-1"></i> Add to Cart
-            </button>
-            <button class="btn btn-outline-primary px-4 py-2" id="buyNowBtn">
-              <i class="bi bi-lightning-charge me-1"></i> Buy Now
-            </button>
-          </div>
+<% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+  <!-- Admin View: Admins cannot purchase -->
+  <div class="alert alert-secondary d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-shield-lock-fill fs-5"></i>
+    <span>Admins cannot purchase books or add items to cart.</span>
+  </div>
+<% } else { %>
+  <!-- Customer & Guest View -->
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <div class="quantity-selector">
+      <button type="button" id="qtyDecreaseBtn">−</button>
+      <input type="number" id="qtyInput" value="1" min="1" />
+      <button type="button" id="qtyIncreaseBtn">+</button>
+    </div>
+    <button class="btn btn-primary px-4 py-2 btn-add-cart" id="addToCartBtn">
+      <i class="bi bi-cart-plus me-1"></i> Add to Cart
+    </button>
+    <button class="btn btn-outline-primary px-4 py-2" id="buyNowBtn">
+      <i class="bi bi-lightning-charge me-1"></i> Buy Now
+    </button>
+  </div>
+<% } %>
 
-          <div class="d-flex gap-4 small text-muted">
-            <div><i class="bi bi-truck me-1"></i> Cash on Delivery Available</div>
-            <div><i class="bi bi-arrow-repeat me-1"></i> Easy Returns</div>
-          </div>
-        </div>
-      </div>
+<div class="d-flex gap-4 small text-muted">
+  <div><i class="bi bi-truck me-1"></i> Cash on Delivery Available</div>
+  <div><i class="bi bi-arrow-repeat me-1"></i> Easy Returns</div>
+</div>
+</div>
+</div>
 
-      <!-- ═══ Reviews Section ═══ -->
-      <div class="row mt-5">
-        <div class="col-lg-8">
-          <h4 class="section-title">Customer Reviews</h4>
+<!-- ═══ Reviews Section ═══ -->
+<div class="row mt-5">
+<div class="col-lg-8">
+  <h4 class="section-title">Customer Reviews</h4>
 
           <!-- Add Review Form (auth users only) -->
           <div class="card mb-4 auth-only d-none" id="addReviewCard">

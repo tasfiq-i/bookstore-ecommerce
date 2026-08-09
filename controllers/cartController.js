@@ -5,10 +5,9 @@ const Coupon = require('../models/Coupon');
 const ApiResponse = require('../utils/apiResponse');
 const { AppError } = require('../middleware/errorHandler');
 
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 // Internal helper: builds a fully populated, priced cart summary
-// Recomputes totals live from current Book prices/stock (never trusts stale cart data)
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 const buildCartSummary = async (userId) => {
   let cart = await Cart.findOne({ user: userId }).populate({
     path: 'items.book',
@@ -19,7 +18,6 @@ const buildCartSummary = async (userId) => {
     cart = await Cart.create({ user: userId, items: [] });
   }
 
-  // Filter out items whose book was deleted or deactivated since being added
   const validItems = [];
   let removedItems = [];
 
@@ -31,7 +29,6 @@ const buildCartSummary = async (userId) => {
     validItems.push(item);
   }
 
-  // Persist removal of invalid items if any were found
   if (removedItems.length > 0) {
     cart.items = validItems;
     await cart.save();
@@ -84,7 +81,6 @@ const buildCartSummary = async (userId) => {
           discountAmount
         };
       } else {
-        // Coupon became invalid (expired/limit reached) since it was applied — auto-remove
         cart.couponApplied = { code: null, discountAmount: 0 };
         await cart.save();
       }
@@ -150,7 +146,6 @@ exports.addItem = async (req, res, next) => {
       return next(new AppError('Book not found or is no longer available', 404));
     }
 
-    // ── Server-side stock validation (never trust the client) ──
     if (book.stock <= 0) {
       return next(new AppError(`"${book.title}" is currently out of stock`, 400));
     }
@@ -216,7 +211,6 @@ exports.updateItemQuantity = async (req, res, next) => {
       return next(new AppError('This book is no longer available', 404));
     }
 
-    // ── Live stock validation on update ──
     if (qty > book.stock) {
       return next(
         new AppError(`Only ${book.stock} unit(s) of "${book.title}" are available in stock`, 400)
@@ -259,7 +253,6 @@ exports.removeItem = async (req, res, next) => {
 
     cart.removeItem(bookId);
 
-    // If cart becomes empty, clear any applied coupon too
     if (cart.items.length === 0) {
       cart.couponApplied = { code: null, discountAmount: 0 };
     }
@@ -295,7 +288,7 @@ exports.clearCart = async (req, res, next) => {
   }
 };
 
-// @desc    Sync/validate entire cart against live stock (called on cart page load)
+// @desc    Sync/validate entire cart against live stock
 // @route   GET /api/cart/validate
 // @access  Private
 exports.validateCart = async (req, res, next) => {
@@ -340,7 +333,6 @@ exports.applyCoupon = async (req, res, next) => {
       return next(new AppError('Invalid coupon code', 404));
     }
 
-    // Calculate current subtotal to validate against minPurchaseAmount
     const subtotal = Math.round(
       cart.items.reduce((sum, item) => {
         const price = item.book.discountPrice != null ? item.book.discountPrice : item.book.price;
@@ -406,6 +398,68 @@ exports.getCartCount = async (req, res, next) => {
       : 0;
 
     return ApiResponse.success(res, 200, 'Cart count fetched', { itemCount });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Merge a guest (localStorage) cart into the logged-in user's DB cart
+// @route   POST /api/cart/merge
+// @access  Private
+exports.mergeGuestCart = async (req, res, next) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      const summary = await buildCartSummary(req.user._id);
+      return ApiResponse.success(res, 200, 'Nothing to merge', summary);
+    }
+
+    let cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      cart = await Cart.create({ user: req.user._id, items: [] });
+    }
+
+    const skipped = [];
+
+    for (const guestItem of items) {
+      if (!guestItem.bookId || !mongoose.Types.ObjectId.isValid(guestItem.bookId)) continue;
+
+      const book = await Book.findById(guestItem.bookId);
+      if (!book || !book.isActive) {
+        skipped.push('An item from your saved cart is no longer available');
+        continue;
+      }
+
+      const qty = Math.max(1, parseInt(guestItem.quantity, 10) || 1);
+      const existingItem = cart.items.find((i) => i.book.toString() === guestItem.bookId);
+      const requestedTotal = existingItem ? existingItem.quantity + qty : qty;
+
+      if (requestedTotal > book.stock) {
+        skipped.push(`"${book.title}" — only ${book.stock} unit(s) available, some quantity was not merged`);
+      }
+
+      const finalQty = Math.min(requestedTotal, book.stock);
+      if (finalQty <= 0) continue;
+
+      const effectivePrice = book.discountPrice != null ? book.discountPrice : book.price;
+
+      if (existingItem) {
+        cart.updateItemQuantity(guestItem.bookId, finalQty);
+      } else {
+        cart.addItem(guestItem.bookId, finalQty, effectivePrice);
+      }
+    }
+
+    await cart.save();
+
+    const summary = await buildCartSummary(req.user._id);
+    const message =
+      skipped.length > 0
+        ? `Cart merged with some adjustments: ${skipped.join('; ')}`
+        : 'Your saved cart items have been added to your account';
+
+    return ApiResponse.success(res, 200, message, summary);
   } catch (error) {
     next(error);
   }

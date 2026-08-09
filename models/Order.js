@@ -53,6 +53,20 @@ const statusHistorySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const guestInfoSchema = new mongoose.Schema(
+  {
+    name: { type: String, trim: true },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please provide a valid email address']
+    },
+    phone: { type: String, trim: true }
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: {
@@ -63,7 +77,15 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: false // guest orders have no user account
+    },
+    isGuestOrder: {
+      type: Boolean,
+      default: false
+    },
+    guestInfo: {
+      type: guestInfoSchema,
+      default: undefined
     },
     items: {
       type: [orderItemSchema],
@@ -151,9 +173,26 @@ const orderSchema = new mongoose.Schema(
 );
 
 orderSchema.index({ user: 1, createdAt: -1 });
-//orderSchema.index({ orderNumber: 1 }, { unique: true });
+orderSchema.index({ orderNumber: 1 }, { unique: true });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
+orderSchema.index({ 'guestInfo.email': 1 });
+
+// ── Guarantee every order has either a registered user OR valid guest info ──
+orderSchema.pre('validate', function (next) {
+  if (!this.user && !this.isGuestOrder) {
+    return next(new Error('Order must have either a registered user or be marked as a guest order'));
+  }
+  if (this.isGuestOrder) {
+    if (!this.guestInfo || !this.guestInfo.email || !this.guestInfo.name || !this.guestInfo.phone) {
+      return next(new Error('Guest orders require guestInfo.name, guestInfo.email, and guestInfo.phone'));
+    }
+  }
+  if (this.user && this.isGuestOrder) {
+    return next(new Error('Order cannot be both a registered-user order and a guest order'));
+  }
+  next();
+});
 
 // Push initial status into history on creation
 orderSchema.pre('save', function (next) {

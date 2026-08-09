@@ -37,10 +37,33 @@
     </div>
 
     <form id="checkoutForm" class="row g-4 d-none">
-      <!-- Left: Address + Notes -->
+      <!-- Left: Contact Info + Address + Notes -->
       <div class="col-lg-8">
 
-        <!-- Shipping Address -->
+        <!-- Step 0: Guest Contact Info Card (Visible only for Guest users via checkout.js) -->
+        <div class="card mb-4 d-none" id="guestContactCard">
+          <div class="card-body">
+            <h6 class="mb-3"><span class="checkout-step-badge">0</span>Your Contact Info</h6>
+            <p class="small text-muted">Checking out as a guest. <a href="/login?redirect=/checkout">Log in</a> for faster checkout and order tracking.</p>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="guestName" placeholder="Enter your full name" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="guestEmail" placeholder="example@mail.com" />
+                <div class="form-text">We'll send your order confirmation and invoice here.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="guestPhone" placeholder="e.g. 01700000000" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1: Shipping Address -->
         <div class="card mb-4">
           <div class="card-body">
             <h6 class="mb-3"><span class="checkout-step-badge">1</span>Shipping Address</h6>
@@ -98,7 +121,7 @@
                   <label class="form-label">Country</label>
                   <input type="text" class="form-control" name="country" id="newCountry" value="Bangladesh" />
                 </div>
-                <div class="col-12">
+                <div class="col-12" id="saveAddressCheckWrapper">
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="saveAddressCheck" />
                     <label class="form-check-label small" for="saveAddressCheck">Save this address to my profile</label>
@@ -109,7 +132,7 @@
           </div>
         </div>
 
-        <!-- Payment Method -->
+        <!-- Step 2: Payment Method -->
         <div class="card mb-4">
           <div class="card-body">
             <h6 class="mb-3"><span class="checkout-step-badge">2</span>Payment Method</h6>
@@ -123,7 +146,7 @@
           </div>
         </div>
 
-        <!-- Order Notes -->
+        <!-- Step 3: Order Notes -->
         <div class="card">
           <div class="card-body">
             <h6 class="mb-3"><span class="checkout-step-badge">3</span>Order Notes <span class="text-muted small">(optional)</span></h6>
