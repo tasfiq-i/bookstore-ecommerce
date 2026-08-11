@@ -47,8 +47,9 @@ const mergeCartValidation = [
   body('items.*.quantity').optional().isInt({ min: 1 }).withMessage('Invalid quantity')
 ];
 
-// ─── All cart routes require authentication ─────────────
-router.use(protect, authorize('customer', 'admin'));
+// ─── Only 'customer' role is allowed for cart operations ─────────────
+// 'admin' removed so admins get blocked automatically at the route middleware level
+router.use(protect, authorize('customer'));
 
 router.get('/', getCart);
 router.get('/validate', validateCart);

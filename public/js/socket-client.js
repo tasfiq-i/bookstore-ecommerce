@@ -63,6 +63,45 @@
     return socket;
   }
 
+  // ─────────────────────────────────────────────────────
+  // Live stock-status-text updater
+  // Updates every .stock-status-line[data-book-stock-id="..."]
+  // element on the current page — handles the same book
+  // appearing multiple times (e.g. Featured + Best Sellers).
+  // ─────────────────────────────────────────────────────
+  // ── REPLACE the if/else-if/else block inside updateStockStatusText() ──
+  function updateStockStatusText(bookId, stock) {
+    const $lines = $(`.stock-status-line[data-book-stock-id="${bookId}"]`);
+    if ($lines.length === 0) return;
+
+    const isOutOfStock = stock <= 0;
+    const isLowStock = stock > 0 && stock <= 10;
+
+    let statusClass, text;
+    if (isOutOfStock) {
+      statusClass = 'stock-out';
+      text = 'Out of Stock';
+    } else if (isLowStock) {
+      statusClass = 'stock-low';
+      text = `Only ${stock} left`;
+    } else {
+      statusClass = 'stock-in';
+      text = `In Stock (${stock} pieces)`;
+    }
+
+    $lines.each(function () {
+      const $line = $(this);
+      $line
+        .removeClass('stock-in stock-low stock-out')
+        .addClass(statusClass)
+        .find('.stock-status-text')
+        .text(text);
+
+      $line.addClass('stock-live-flash');
+      setTimeout(() => $line.removeClass('stock-live-flash'), 1000);
+    });
+  }
+
   const BookStoreSocket = {
     connect() {
       return ensureSocket();
@@ -131,12 +170,21 @@
           window.BookStore.Toast[toastType || 'info'](data.message);
         }
       });
-    }
+    },
+
+    /** Exposed so any page can manually trigger a stock-text refresh if needed */
+    updateStockStatusText
   };
 
   window.BookStoreSocket = BookStoreSocket;
 
   $(function () {
     BookStoreSocket.connect();
+
+    // Global live stock-status-text listener — active on every page that
+    // loads this script, no per-page subscription code required.
+    BookStoreSocket.onStockUpdate((data) => {
+      updateStockStatusText(data.bookId, data.stock);
+    });
   });
 })(window, jQuery);

@@ -23,42 +23,69 @@
   }
 
   // ── Reuses the same book-card markup pattern as catalog.js (Step 12) ──
+ // ── REPLACE the existing renderBookCard() function in home.js ──
   function renderBookCard(book) {
     const img = book.images && book.images.length > 0 ? book.images[0].url : '/images/book-placeholder.png';
     const hasDiscount = book.discountPrice != null && book.discountPrice < book.price;
     const effectivePrice = hasDiscount ? book.discountPrice : book.price;
     const discountPercent = hasDiscount ? Math.round(((book.price - book.discountPrice) / book.price) * 100) : 0;
-    const isOutOfStock = book.stock <= 0;
 
-    let stockBadge = '';
+    const stock = book.stock != null ? book.stock : 0;
+    const isOutOfStock = stock <= 0;
+    const isLowStock = stock > 0 && stock <= 10;
+
+    let coverBadge = '';
     if (isOutOfStock) {
-      stockBadge = '<span class="badge badge-stock bg-danger">Out of Stock</span>';
-    } else if (book.lowStockThreshold && book.stock <= book.lowStockThreshold) {
-      stockBadge = `<span class="badge badge-stock bg-warning text-dark">Only ${book.stock} left</span>`;
+      coverBadge = '<span class="badge badge-stock bg-danger">Out of Stock</span>';
+    } else if (isLowStock) {
+      coverBadge = `<span class="badge badge-stock bg-warning text-dark">Only ${stock} left</span>`;
     }
 
     const authorName = book.author && book.author.name ? book.author.name : '';
+    
+    let stockClass, stockText;
+    if (isOutOfStock) {
+      stockClass = 'stock-out';
+      stockText = 'Out of Stock';
+    } else if (isLowStock) {
+      stockClass = 'stock-low';
+      stockText = `Only ${stock} left`;
+    } else {
+      stockClass = 'stock-in';
+      stockText = `In Stock (${stock} pieces)`;
+    }
 
     return `
       <div class="card book-card" data-book-id="${book._id}">
         <a href="/books/${book.slug}" class="text-decoration-none">
           <div class="book-cover-wrap">
             <img src="${img}" alt="${esc(book.title)}" loading="lazy" />
-            ${stockBadge}
+            ${coverBadge}
             ${hasDiscount ? `<span class="badge badge-discount">-${discountPercent}%</span>` : ''}
           </div>
         </a>
-        <div class="card-body d-flex flex-column">
+        <div class="card-body">
           <a href="/books/${book.slug}" class="text-decoration-none text-dark">
             <h6 class="card-title mb-1">${esc(book.title)}</h6>
           </a>
           ${authorName ? `<div class="book-author mb-2">by ${esc(authorName)}</div>` : ''}
-          <div class="mt-auto d-flex justify-content-between align-items-center">
+
+          <div class="d-flex align-items-center mb-1">
+            ${book.ratings ? renderStarsHome(book.ratings.average) : ''}
+            <span class="small text-muted ms-1">(${book.ratings ? book.ratings.count : 0})</span>
+          </div>
+
+          <div class="stock-status-line ${stockClass}" data-book-stock-id="${book._id}">
+            <span class="stock-status-text">${stockText}</span>
+          </div>
+
+          <div class="price-row d-flex justify-content-between align-items-center">
             <div>
               <span class="price-current">${formatCurrency(effectivePrice)}</span>
               ${hasDiscount ? `<span class="price-original">${formatCurrency(book.price)}</span>` : ''}
             </div>
           </div>
+
           <button
             class="btn btn-primary btn-sm w-100 mt-3 btn-add-cart"
             data-book-id="${book._id}"
@@ -69,6 +96,21 @@
         </div>
       </div>
     `;
+  }
+
+  // ── ADD this small star-rendering helper if home.js doesn't already have one ──
+  // (catalog.js has renderStars(); home.js's original version may not have exposed
+  // a matching helper — add this if you get a "renderStarsHome is not defined" error)
+  function renderStarsHome(average) {
+    const avg = Number(average) || 0;
+    let html = '<span class="star-rating-display small">';
+    for (let i = 1; i <= 5; i++) {
+      if (avg >= i) html += '<i class="bi bi-star-fill"></i>';
+      else if (avg >= i - 0.5) html += '<i class="bi bi-star-half"></i>';
+      else html += '<i class="bi bi-star"></i>';
+    }
+    html += '</span>';
+    return html;
   }
 
   function renderSkeletonError($grid, message) {

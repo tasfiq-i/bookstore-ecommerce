@@ -3,7 +3,7 @@
    Server-side pagination/search/filter, role promotion,
    activate/deactivate, delete (blocked if order history
    exists), and a details modal with lifetime spend stats.
-   Wired to Step 9's /api/admin/users endpoints.
+  /api/admin/users endpoints.
    ═══════════════════════════════════════════════════════ */
 
 (function (window, $) {

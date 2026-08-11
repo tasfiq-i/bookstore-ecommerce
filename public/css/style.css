@@ -108,7 +108,7 @@ a {
 }
 
 .navbar-brand .brand-text {
-  font-family: var(--font-heading);
+  font-family:'Plus Jakarta Sans', sans-serif;
   color: var(--brand-dark);
 }
 
@@ -391,7 +391,7 @@ a {
   .auth-card { margin: 30px 16px; }
 }
 /* ═══════════════════════════════════════════════════════
-   Step 12 — Catalog Grid, Filters, Book Details
+    Catalog Grid, Filters, Book Details
    ═══════════════════════════════════════════════════════ */
 
 /* Responsive auto-fill grid — column count adjusts automatically,
@@ -624,7 +624,7 @@ a {
 
 
 /* ═══════════════════════════════════════════════════════
-   Step 13 — Cart & Checkout Pages
+  Cart & Checkout Pages
    ═══════════════════════════════════════════════════════ */
 
 .cart-item-row {
@@ -748,7 +748,7 @@ a {
 
 
 /* ═══════════════════════════════════════════════════════
-   Step 14 — Profile, Address Book, Order History
+   Profile, Address Book, Order History
    ═══════════════════════════════════════════════════════ */
 
 .profile-sidebar {
@@ -897,7 +897,7 @@ a {
 
 
 /* ═══════════════════════════════════════════════════════
-   Step 15 — Admin Dashboard
+   Admin Dashboard
    ═══════════════════════════════════════════════════════ */
 
 .admin-layout {
@@ -1107,7 +1107,7 @@ a {
 }
 
 /* ═══════════════════════════════════════════════════════
-   Step 16 — Admin Entity Management Tables
+  Admin Entity Management Tables
    ═══════════════════════════════════════════════════════ */
 
 .admin-table-card {
@@ -1244,7 +1244,7 @@ a {
 }
 
 /* ═══════════════════════════════════════════════════════
-   Step 17 — Admin Orders & Coupons
+   Admin Orders & Coupons
    ═══════════════════════════════════════════════════════ */
 
 .status-select-inline {
@@ -1400,8 +1400,9 @@ a {
 .hero-subtitle {
   color: rgba(255,255,255,0.8);
   font-size: 1.05rem;
-  max-width: 480px;
+  max-width: 565px;
   margin-bottom: 2rem;
+  font-family: 'Poppins', sans-serif;
 }
 .hero-search-form .input-group {
   max-width: 520px;
@@ -1523,3 +1524,26 @@ a {
   .hero-illustration { display: none; }
   .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
 }
+
+
+.stock-status-line {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  min-height: 18px;
+}
+
+.stock-status-line.stock-in { color: #27ae60; }
+.stock-status-line.stock-low { color: #f39c12; }
+.stock-status-line.stock-out { color: #e74c3c; }
+
+.stock-status-line.stock-live-flash {
+  animation: stockFlash 1s ease;
+}
+@keyframes stockFlash {
+  0% { background-color: rgba(230, 126, 34, 0.25); border-radius: 4px; }
+  100% { background-color: transparent; }
+}
+
+.book-card .card-body { display: flex; flex-direction: column; }
+.book-card .card-body .price-row { margin-top: auto; }

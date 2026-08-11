@@ -15,50 +15,73 @@
   // ─────────────────────────────────────────────────────
   // Shared: render a single book card
   // ─────────────────────────────────────────────────────
+  // ── REPLACE the existing renderBookCard() function in catalog.js ──
   function renderBookCard(book) {
     const img = book.images && book.images.length > 0 ? book.images[0].url : '/images/book-placeholder.png';
     const hasDiscount = book.discountPrice != null && book.discountPrice < book.price;
     const effectivePrice = hasDiscount ? book.discountPrice : book.price;
     const discountPercent = hasDiscount ? Math.round(((book.price - book.discountPrice) / book.price) * 100) : 0;
 
-    const stock = book.stock !== undefined ? book.stock : (book.stockStatus === 'out-of-stock' ? 0 : 1);
+    const stock = book.stock != null ? book.stock : 0;
     const isOutOfStock = stock <= 0;
+    const isLowStock = stock > 0 && stock <= 10;
 
-    let stockBadge = '';
+    let coverBadge = '';
     if (isOutOfStock) {
-      stockBadge = '<span class="badge badge-stock bg-danger">Out of Stock</span>';
-    } else if (book.stockStatus === 'low-stock' || (book.lowStockThreshold && stock <= book.lowStockThreshold)) {
-      stockBadge = `<span class="badge badge-stock bg-warning text-dark">Only ${stock} left</span>`;
+      coverBadge = '<span class="badge badge-stock bg-danger">Out of Stock</span>';
+    } else if (isLowStock) {
+      coverBadge = `<span class="badge badge-stock bg-warning text-dark">Only ${stock} left</span>`;
     }
 
     const categoryName = book.category && book.category.name ? book.category.name : '';
     const authorName = book.author && book.author.name ? book.author.name : '';
+
+    // ── Stock status line (below rating, above price) ──
+   
+    let stockClass, stockText;
+    if (isOutOfStock) {
+      stockClass = 'stock-out';
+      stockText = 'Out of Stock';
+    } else if (isLowStock) {
+      stockClass = 'stock-low';
+      stockText = `Only ${stock} left`;
+    } else {
+      stockClass = 'stock-in';
+      stockText = `In Stock (${stock} pieces)`;
+    }
 
     return `
       <div class="card book-card" data-book-id="${book._id}">
         <a href="/books/${book.slug}" class="text-decoration-none">
           <div class="book-cover-wrap">
             <img src="${img}" alt="${escapeHtml(book.title)}" loading="lazy" />
-            ${stockBadge}
+            ${coverBadge}
             ${hasDiscount ? `<span class="badge badge-discount">-${discountPercent}%</span>` : ''}
           </div>
         </a>
-        <div class="card-body d-flex flex-column">
+        <div class="card-body">
           ${categoryName ? `<div class="small text-muted mb-1">${escapeHtml(categoryName)}</div>` : ''}
           <a href="/books/${book.slug}" class="text-decoration-none text-dark">
             <h6 class="card-title mb-1">${escapeHtml(book.title)}</h6>
           </a>
           ${authorName ? `<div class="book-author mb-2">by ${escapeHtml(authorName)}</div>` : ''}
-          <div class="d-flex align-items-center mb-2">
+
+          <div class="d-flex align-items-center mb-1">
             ${renderStars(book.ratings ? book.ratings.average : 0, 'small')}
             <span class="small text-muted ms-1">(${book.ratings ? book.ratings.count : 0})</span>
           </div>
-          <div class="mt-auto d-flex justify-content-between align-items-center">
+
+          <div class="stock-status-line ${stockClass}" data-book-stock-id="${book._id}">
+            <span class="stock-status-text">${stockText}</span>
+          </div>
+
+          <div class="price-row d-flex justify-content-between align-items-center">
             <div>
               <span class="price-current">${formatCurrency(effectivePrice)}</span>
               ${hasDiscount ? `<span class="price-original">${formatCurrency(book.price)}</span>` : ''}
             </div>
           </div>
+
           <button
             class="btn btn-primary btn-sm w-100 mt-3 btn-add-cart"
             data-book-id="${book._id}"

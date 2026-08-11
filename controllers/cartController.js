@@ -130,6 +130,11 @@ exports.getCart = async (req, res, next) => {
 // @access  Private
 exports.addItem = async (req, res, next) => {
   try {
+    // 🔒 Admin Restriction Check
+    if (req.user && req.user.role === 'admin') {
+      return next(new AppError('Admins cannot add items to the cart', 403));
+    }
+
     const { bookId, quantity = 1 } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
@@ -184,6 +189,11 @@ exports.addItem = async (req, res, next) => {
 // @access  Private
 exports.updateItemQuantity = async (req, res, next) => {
   try {
+    // 🔒 Admin Restriction Check
+    if (req.user && req.user.role === 'admin') {
+      return next(new AppError('Admins cannot perform cart operations', 403));
+    }
+
     const { bookId } = req.params;
     const { quantity } = req.body;
 
@@ -408,6 +418,12 @@ exports.getCartCount = async (req, res, next) => {
 // @access  Private
 exports.mergeGuestCart = async (req, res, next) => {
   try {
+    // 🔒 Admin Restriction Check
+    if (req.user && req.user.role === 'admin') {
+      const summary = await buildCartSummary(req.user._id);
+      return ApiResponse.success(res, 200, 'Admin cart merge bypassed', summary);
+    }
+
     const { items } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {

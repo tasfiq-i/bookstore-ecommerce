@@ -3,7 +3,7 @@
    AJAX helpers, Chart.js rendering, Socket.io admin room,
    sidebar toggle, and Dashboard page logic.
    This file is loaded on EVERY /admin/* page — future admin
-   pages (Step 16+) reuse AdminCore below.
+   pages  reuse AdminCore below.
    ═══════════════════════════════════════════════════════ */
 
 (function (window, $) {
