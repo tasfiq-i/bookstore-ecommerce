@@ -104,6 +104,22 @@ app.get('/books', (req, res) => res.render('books/catalog', { title: 'Book Catal
 app.get('/books/:slug', (req, res) => res.render('books/details', { title: 'Book Details', slug: req.params.slug }));
 app.get('/cart', (req, res) => res.render('cart/cart', { title: 'Your Cart' }));
 app.get('/checkout', (req, res) => res.render('checkout/checkout', { title: 'Checkout' }));
+app.get('/order-confirmation', (req, res) => {
+  const { orderNumber, email } = req.query;
+
+  // Guard: if someone lands here without the required query params,
+  // send them somewhere useful instead of rendering a broken page
+  if (!orderNumber) {
+    return res.redirect('/books');
+  }
+
+  res.render('checkout/order-confirmation', {
+    title: 'Order Confirmed',
+    orderNumber,
+    email: email || null
+  });
+});
+
 app.get('/profile', (req, res) => res.render('user/profile', { title: 'My Profile' }));
 app.get('/orders', (req, res) => res.render('user/orders', { title: 'My Orders' }));
 app.get('/orders/:id', (req, res) => res.render('user/order-detail', { title: 'Order Details', orderId: req.params.id }));

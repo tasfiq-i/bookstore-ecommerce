@@ -42,7 +42,7 @@ const cartSchema = new mongoose.Schema(
   }
 );
 
-//cartSchema.index({ user: 1 }, { unique: true });
+
 
 // Virtual: subtotal (before discount)
 cartSchema.virtual('itemCount').get(function () {

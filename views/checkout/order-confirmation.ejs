@@ -1,0 +1,135 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<main class="py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6 col-md-8">
+
+        <div class="card border-0 shadow-sm text-center">
+          <div class="card-body p-5">
+
+            <!-- ✅ Success Icon -->
+            <div class="mb-4">
+              <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+            </div>
+
+            <h3 class="mb-2">Order Placed Successfully!</h3>
+            <p class="text-muted mb-4">
+              Thank you for your purchase. We've received your order and will begin processing it shortly.
+            </p>
+
+            <!-- Order Details Box -->
+            <div class="bg-light rounded p-4 mb-4 text-start">
+              <div class="row g-3">
+                <div class="col-12">
+                  <div class="small text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.03em;">
+                    Order Number
+                  </div>
+                  <div class="fs-5 fw-bold" id="confirmationOrderNumber"><%= orderNumber %></div>
+                </div>
+                <% if (email) { %>
+                  <div class="col-12">
+                    <div class="small text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.03em;">
+                      Confirmation Sent To
+                    </div>
+                    <div class="fw-semibold"><%= email %></div>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Optional: live order summary loaded via AJAX (see script below) -->
+            <div id="orderSummaryBox" class="d-none text-start mb-4">
+              <hr />
+              <h6 class="small text-uppercase text-muted mb-3">Order Summary</h6>
+              <div id="orderItemsList"></div>
+              <div class="d-flex justify-content-between fw-bold mt-3 pt-2 border-top">
+                <span>Total</span>
+                <span id="orderTotalAmount">—</span>
+              </div>
+            </div>
+            <div id="orderSummaryLoading" class="text-center text-muted small mb-4 d-none">
+              <div class="spinner-border spinner-border-sm me-2"></div>Loading order details...
+            </div>
+
+            <p class="small text-muted mb-4">
+              A confirmation email with your invoice has been sent to your inbox.
+              <% if (typeof isGuest !== 'undefined' && isGuest) { %>
+                Since you checked out as a guest, please save your order number for future reference.
+              <% } %>
+            </p>
+
+            <!-- Action Buttons -->
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+              <a href="/books" class="btn btn-primary px-4">
+                <i class="bi bi-arrow-left me-1"></i> Continue Shopping
+              </a>
+              <a href="/orders" class="btn btn-outline-primary px-4">
+                <i class="bi bi-bag-check me-1"></i> View My Orders
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+  $(function () {
+    const orderNumber = '<%= orderNumber %>';
+    const email = '<%= email || "" %>';
+
+    // Only attempt an AJAX lookup if we have enough info AND the user isn't
+    // logged in as the order owner already redirected here from /orders.
+    // Guest orders require email as the lookup key (see Step 18's getGuestOrder).
+    if (orderNumber && email && window.BookStore) {
+      const { Api } = window.BookStore;
+
+      $('#orderSummaryLoading').removeClass('d-none');
+
+      Api.get(`/orders/guest/${encodeURIComponent(orderNumber)}`, { email })
+        .done((res) => {
+          const order = res.data.order;
+          renderOrderSummary(order);
+        })
+        .fail(() => {
+          // Silently ignore — the confirmation page already shows the
+          // essential info (order number + email); a failed summary
+          // fetch shouldn't block or alarm the user here.
+        })
+        .always(() => {
+          $('#orderSummaryLoading').addClass('d-none');
+        });
+    }
+
+    function renderOrderSummary(order) {
+      const formatCurrency = window.BookStore.formatCurrency;
+
+      const itemsHtml = order.items
+        .map(
+          (item) => `
+          <div class="d-flex justify-content-between small mb-2">
+            <span>${escapeHtml(item.title)} × ${item.quantity}</span>
+            <span>${formatCurrency(item.price * item.quantity)}</span>
+          </div>`
+        )
+        .join('');
+
+      $('#orderItemsList').html(itemsHtml);
+      $('#orderTotalAmount').text(formatCurrency(order.totalPrice));
+      $('#orderSummaryBox').removeClass('d-none');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+  });
+</script>

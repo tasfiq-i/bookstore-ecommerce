@@ -23,7 +23,9 @@ const reviewSchema = new mongoose.Schema(
       maxlength: [1000, 'Comment cannot exceed 1000 characters']
     }
   },
-  { timestamps: true }
+  {
+     timestamps: true
+  }
 );
 
 const bookSchema = new mongoose.Schema(
@@ -97,14 +99,21 @@ const bookSchema = new mongoose.Schema(
     },
     images: [
       {
-        url: { type: String, required: true },
-        publicId: { type: String, required: true }
+        url: {
+           type: String,
+            required: true
+          },
+        publicId: {
+           type: String,
+            required: true 
+          }
       }
     ],
     language: {
       type: String,
       trim: true,
-      default: 'English'
+      enum: ['English', 'Bangla', 'Arabic', 'Hindi', 'Urdu'],
+      default: 'Bangla'
     },
     pages: {
       type: Number,
@@ -112,16 +121,27 @@ const bookSchema = new mongoose.Schema(
     },
     format: {
       type: String,
-      enum: ['Paperback', 'Hardcover', 'E-Book', 'Audiobook'],
+      enum: ['Paperback', 'Hardcover', 'E-Book', 'Audiobook','Mass Market Paperback','Spiral Bound','Board Book',],
       default: 'Paperback'
     },
     publishedDate: {
       type: Date
     },
-    tags: [{ type: String, trim: true, lowercase: true }],
+    tags: [{
+      type: String, 
+      trim: true, 
+      lowercase: true }],
     ratings: {
-      average: { type: Number, default: 0, min: 0, max: 5 },
-      count: { type: Number, default: 0 }
+      average: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5 
+    },
+      count: {
+      type: Number, 
+      default: 0 
+      }
     },
     reviews: [reviewSchema],
     soldCount: {
@@ -146,7 +166,7 @@ const bookSchema = new mongoose.Schema(
 );
 
 // Indexes for search, filter, and sort performance
-// (Duplicate slug and isbn indexes removed because 'unique: true' is set in schema definition)
+
 bookSchema.index({ title: 'text', description: 'text', tags: 'text' });
 bookSchema.index({ category: 1 });
 bookSchema.index({ author: 1 });
